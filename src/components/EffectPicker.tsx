@@ -4,11 +4,19 @@ import { useState } from "react";
 import type { CelebrationEffectKey } from "@/lib/utils";
 import { CELEBRATION_EFFECTS } from "@/lib/utils";
 import CelebrationEffect from "@/components/CelebrationEffect";
+import { Flower2, PartyPopper, Sparkles, Flame, Eye } from "lucide-react";
 
 interface EffectPickerProps {
   value: CelebrationEffectKey;
   onChange: (val: CelebrationEffectKey) => void;
 }
+
+const EFFECT_ICONS: Record<CelebrationEffectKey, React.ReactNode> = {
+  flowers: <Flower2 className="w-5 h-5 text-pink-400" />,
+  confetti: <PartyPopper className="w-5 h-5 text-amber-400" />,
+  sparkles: <Sparkles className="w-5 h-5 text-yellow-300" />,
+  balloons: <Flame className="w-5 h-5 text-red-400" />,
+};
 
 export default function EffectPicker({ value, onChange }: EffectPickerProps) {
   const [triggerId, setTriggerId] = useState<number>(0);
@@ -18,7 +26,6 @@ export default function EffectPicker({ value, onChange }: EffectPickerProps) {
       e.preventDefault();
       e.stopPropagation();
     }
-    // Tạo trigger ID mới kích hoạt đợt bung nở tức thì 100%
     setTriggerId(Date.now());
   };
 
@@ -62,7 +69,9 @@ export default function EffectPicker({ value, onChange }: EffectPickerProps) {
               )}
 
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-xl sm:text-2xl select-none">{item.icon}</span>
+                <div className="p-1 rounded-lg bg-white/10 shrink-0">
+                  {EFFECT_ICONS[key]}
+                </div>
                 <span className="font-bold text-xs sm:text-sm text-white">{item.label}</span>
               </div>
               <p className="text-[10px] sm:text-[11px] text-white/50 line-clamp-2 leading-tight">
@@ -83,7 +92,8 @@ export default function EffectPicker({ value, onChange }: EffectPickerProps) {
           onClick={handlePreview}
           className="text-xs font-semibold px-3.5 py-1.5 rounded-full bg-pink-500/20 hover:bg-pink-500/30 text-pink-300 border border-pink-500/30 hover:border-pink-500/50 transition cursor-pointer flex items-center gap-1.5 active:scale-95"
         >
-          <span>👁</span> Xem thử hiệu ứng
+          <Eye className="w-3.5 h-3.5" />
+          <span>Xem thử hiệu ứng</span>
         </button>
       </div>
     </div>

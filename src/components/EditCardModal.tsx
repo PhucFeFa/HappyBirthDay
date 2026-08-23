@@ -8,6 +8,18 @@ import CustomDatePicker from "@/components/CustomDatePicker";
 import type { ThemeKey, CelebrationEffectKey } from "@/lib/utils";
 import { THEMES } from "@/lib/utils";
 import dayjs from "dayjs";
+import {
+  Edit3,
+  X,
+  Layers,
+  Upload,
+  Link2,
+  Plus,
+  Trash2,
+  MessageSquare,
+  AlertTriangle,
+  Sparkles,
+} from "lucide-react";
 
 interface EditCardModalProps {
   slug: string;
@@ -108,61 +120,64 @@ export default function EditCardModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const minDateTime = dayjs().add(2, "minute").format("YYYY-MM-DDTHH:mm");
-  const t = THEMES[theme];
+  const t = THEMES[theme] || THEMES.pink;
 
+  // Ngày mở thiệp tối thiểu là ngày mai
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDateTime = `${tomorrow.toISOString().split("T")[0]}T00:00`;
+
+  // Xử lý tải ảnh từ máy
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    if (images.length + files.length > 6) {
-      setError("Bạn chỉ có thể lưu tối đa 6 tấm ảnh kỷ niệm");
+    const remainingSlots = 6 - images.length;
+    if (remainingSlots <= 0) {
+      alert("Bạn đã thêm tối đa 6 tấm ảnh kỷ niệm!");
       return;
     }
 
+    const filesToProcess = Array.from(files).slice(0, remainingSlots);
+    setCompressing(true);
+
     try {
-      setCompressing(true);
-      setError("");
-      const newImages: string[] = [];
-
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (file.type.startsWith("image/")) {
-          const compressed = await compressImageFile(file);
-          newImages.push(compressed);
-        }
+      const compressedList: string[] = [];
+      for (const file of filesToProcess) {
+        if (!file.type.startsWith("image/")) continue;
+        const compressedBase64 = await compressImageFile(file);
+        compressedList.push(compressedBase64);
       }
-
-      setImages((prev) => [...prev, ...newImages]);
-    } catch (err: unknown) {
-      const errorObj = err as Error;
-      setError(errorObj.message || "Lỗi khi xử lý hình ảnh");
+      setImages((prev) => [...prev, ...compressedList]);
+    } catch (err) {
+      console.error(err);
+      setError("Có lỗi khi nén ảnh, vui lòng thử ảnh khác.");
     } finally {
       setCompressing(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
+  // Thêm ảnh từ URL
   const handleAddUrlImage = () => {
     if (!urlInput.trim()) return;
     if (images.length >= 6) {
-      setError("Bạn có thể thêm tối đa 6 tấm ảnh kỷ niệm");
+      alert("Bạn đã thêm tối đa 6 tấm ảnh!");
       return;
     }
     setImages((prev) => [...prev, urlInput.trim()]);
     setUrlInput("");
   };
 
+  // Xóa từng ảnh
   const handleRemoveImage = (idxToRemove: number) => {
     setImages((prev) => prev.filter((_, idx) => idx !== idxToRemove));
   };
 
+  // Xóa toàn bộ ảnh
   const handleClearAllImages = () => {
     setImages([]);
-    setUrlInput("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -181,18 +196,18 @@ export default function EditCardModal({
 
     try {
       const res = await fetch(`/api/cards/${slug}/edit`, {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          key: creatorToken || undefined,
+          creatorToken: creatorToken || undefined,
           userId: userId || undefined,
           recipientName: recipientName.trim(),
-          revealAt,
+          revealAt: new Date(revealAt).toISOString(),
           theme,
           celebrationEffect,
-          description: description.trim() || undefined,
-          imageUrl: images[0] || undefined,
-          imageUrls: images.length > 0 ? images : undefined,
+          description: description.trim(),
+          imageUrls: images,
+          imageUrl: images.length > 0 ? images[0] : "",
           shareTitle: shareTitle.trim() || undefined,
           shareDescription: shareDescription.trim() || undefined,
         }),
@@ -238,7 +253,7 @@ export default function EditCardModal({
           {/* Header */}
           <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
             <div className="flex items-center gap-2">
-              <span className="text-xl">✏️</span>
+              <Edit3 className="w-5 h-5 text-pink-400" />
               <h3 className="text-base sm:text-lg font-bold text-white">
                 Chỉnh sửa thiệp sinh nhật
               </h3>
@@ -248,7 +263,7 @@ export default function EditCardModal({
               onClick={onClose}
               className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition cursor-pointer"
             >
-              ✕
+              <X className="w-4 h-4" />
             </button>
           </div>
 
@@ -299,27 +314,30 @@ export default function EditCardModal({
             {/* ─── ẢNH KỶ NIỆM RỬA POLAROID (TỐI ĐA 6 ẢNH) ─── */}
             <div className="pt-2 border-t border-white/10">
               <div className="flex items-center justify-between mb-2">
-                <label className="form-label mb-0 text-xs sm:text-sm">
-                  Ảnh kỷ niệm Polaroid <span className="text-white/40 font-normal">(Tối đa 6 ảnh)</span>
+                <label className="form-label mb-0 text-xs sm:text-sm flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-pink-400" />
+                  <span>Ảnh kỷ niệm Polaroid (Tối đa 6 ảnh)</span>
                 </label>
                 <div className="flex bg-white/10 rounded-lg p-0.5 text-xs">
                   <button
                     type="button"
                     onClick={() => setImageMode("upload")}
-                    className={`px-2.5 py-1 rounded-md transition cursor-pointer text-[11px] ${
+                    className={`px-2.5 py-1 rounded-md transition cursor-pointer text-[11px] flex items-center gap-1 ${
                       imageMode === "upload" ? "bg-white/20 text-white font-medium shadow-xs" : "text-white/50 hover:text-white"
                     }`}
                   >
-                    Tải từ máy
+                    <Upload className="w-3 h-3" />
+                    <span>Tải từ máy</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setImageMode("url")}
-                    className={`px-2.5 py-1 rounded-md transition cursor-pointer text-[11px] ${
+                    className={`px-2.5 py-1 rounded-md transition cursor-pointer text-[11px] flex items-center gap-1 ${
                       imageMode === "url" ? "bg-white/20 text-white font-medium shadow-xs" : "text-white/50 hover:text-white"
                     }`}
                   >
-                    Dán URL
+                    <Link2 className="w-3 h-3" />
+                    <span>Dán URL</span>
                   </button>
                 </div>
               </div>
@@ -343,8 +361,9 @@ export default function EditCardModal({
                         compressing ? "opacity-50 pointer-events-none" : ""
                       }`}
                     >
-                      <span className="text-xs font-semibold text-white/85 group-hover:text-white">
-                        {compressing ? "Đang xử lý ảnh..." : "+ Bấm để chọn thêm ảnh từ thiết bị"}
+                      <span className="text-xs font-semibold text-white/85 group-hover:text-white flex items-center gap-1.5">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{compressing ? "Đang xử lý ảnh..." : "Bấm để chọn thêm ảnh từ thiết bị"}</span>
                       </span>
                     </label>
                   )}
@@ -362,9 +381,10 @@ export default function EditCardModal({
                     type="button"
                     onClick={handleAddUrlImage}
                     disabled={!urlInput.trim() || images.length >= 6}
-                    className="btn-secondary text-xs px-3.5 py-2 shrink-0 cursor-pointer disabled:opacity-40"
+                    className="btn-secondary text-xs px-3.5 py-2 shrink-0 cursor-pointer disabled:opacity-40 flex items-center gap-1"
                   >
-                    + Thêm
+                    <Plus className="w-3 h-3" />
+                    <span>Thêm</span>
                   </button>
                 </div>
               )}
@@ -373,15 +393,17 @@ export default function EditCardModal({
               {images.length > 0 && (
                 <div className="p-3 rounded-xl bg-white/5 border border-white/10 mt-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-white/70 font-medium">
-                      Đã lưu {images.length}/6 tấm ảnh kỷ niệm
+                    <span className="text-xs text-white/70 font-medium flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-pink-400" />
+                      <span>Đã lưu {images.length}/6 tấm ảnh kỷ niệm</span>
                     </span>
                     <button
                       type="button"
                       onClick={handleClearAllImages}
-                      className="text-[11px] text-red-400 hover:text-red-300 font-medium cursor-pointer"
+                      className="text-[11px] text-red-400 hover:text-red-300 font-medium cursor-pointer flex items-center gap-1"
                     >
-                      Xóa tất cả
+                      <Trash2 className="w-3 h-3" />
+                      <span>Xóa tất cả</span>
                     </button>
                   </div>
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
@@ -402,7 +424,7 @@ export default function EditCardModal({
                           className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow hover:bg-red-600 transition cursor-pointer"
                           title="Xóa tấm ảnh này"
                         >
-                          ✕
+                          <X className="w-3 h-3" />
                         </button>
                       </div>
                     ))}
@@ -425,8 +447,9 @@ export default function EditCardModal({
 
             {/* Tùy chỉnh tiêu đề Messenger */}
             <div className="pt-2 border-t border-white/10 space-y-3">
-              <span className="text-xs font-semibold text-white/80 block">
-                💬 Tin nhắn hiển thị khi gửi link qua Messenger/Zalo
+              <span className="text-xs font-semibold text-white/80 flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-pink-400" />
+                <span>Tin nhắn hiển thị khi gửi link qua Messenger/Zalo</span>
               </span>
               <div>
                 <label className="text-[11px] text-white/60 block mb-1">Tiêu đề chia sẻ</label>
@@ -435,7 +458,7 @@ export default function EditCardModal({
                   className="form-input text-xs py-2"
                   value={shareTitle}
                   onChange={(e) => setShareTitle(e.target.value)}
-                  placeholder={`Mặc định: 💌 Gửi lời chúc sinh nhật đến ${recipientName}! 🎂`}
+                  placeholder={`Mặc định: Sinh nhật của ${recipientName}!`}
                   maxLength={70}
                 />
               </div>
@@ -446,7 +469,7 @@ export default function EditCardModal({
                   className="form-input text-xs py-2"
                   value={shareDescription}
                   onChange={(e) => setShareDescription(e.target.value)}
-                  placeholder="Mặc định: Cùng viết những lời chúc yêu thương bí mật..."
+                  placeholder="Mặc định: Nếu muốn gửi lời chúc tới sinh nhật tuiii..."
                   maxLength={120}
                 />
               </div>
@@ -458,10 +481,10 @@ export default function EditCardModal({
                 </span>
                 <div className="rounded-md bg-white/10 p-2.5 border border-white/15">
                   <span className="text-xs font-bold text-white block line-clamp-1">
-                    {shareTitle.trim() || `💌 Gửi lời chúc sinh nhật đến ${recipientName.trim() || "Người nhận"}! 🎂`}
+                    {shareTitle.trim() || `Sinh nhật của ${recipientName.trim() || "Người nhận"}`}
                   </span>
                   <span className="text-[11px] text-white/70 block line-clamp-2 mt-0.5">
-                    {shareDescription.trim() || "Cùng gửi những phong bì lời chúc yêu thương bí mật trong ngày sinh nhật nhé! 🎉"}
+                    {shareDescription.trim() || "Nếu muốn gửi lời chúc tới sinh nhật tuiii..."}
                   </span>
                   <span className="text-[9px] text-pink-300/80 font-mono tracking-wider block mt-1.5 truncate">
                     {typeof window !== "undefined" ? window.location.host : "hpbd-mail.vercel.app"}
@@ -472,8 +495,9 @@ export default function EditCardModal({
             </div>
 
             {error && (
-              <div className="p-2.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 text-xs">
-                ⚠ {error}
+              <div className="p-2.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 text-xs flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                <span>{error}</span>
               </div>
             )}
 
@@ -489,12 +513,19 @@ export default function EditCardModal({
               <button
                 type="submit"
                 disabled={loading || compressing}
-                className="btn-primary flex-1 py-2.5 text-xs sm:text-sm font-semibold rounded-xl cursor-pointer disabled:opacity-50"
+                className="btn-primary flex-1 py-2.5 text-xs sm:text-sm font-semibold rounded-xl cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                 style={{
                   background: `linear-gradient(135deg, ${t.primary}, ${t.secondary})`,
                 }}
               >
-                {loading ? "Đang lưu..." : "Lưu thay đổi"}
+                {loading ? (
+                  <span>Đang lưu...</span>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Lưu thay đổi</span>
+                  </>
+                )}
               </button>
             </div>
           </form>

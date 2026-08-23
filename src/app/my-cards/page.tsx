@@ -7,7 +7,18 @@ import { useAuth } from "@/lib/auth-context";
 import StarField from "@/components/StarField";
 import EditCardModal from "@/components/EditCardModal";
 import { formatRevealTime, THEMES, ThemeKey, CelebrationEffectKey } from "@/lib/utils";
-import { copyTextToClipboard, getInviteMessage } from "@/lib/clipboard";
+import { copyTextToClipboard } from "@/lib/clipboard";
+import {
+  Copy,
+  Check,
+  Edit3,
+  Layers,
+  Plus,
+  Sparkles,
+  Calendar,
+  Mail,
+  ExternalLink,
+} from "lucide-react";
 
 interface CardItem {
   id: string;
@@ -63,9 +74,11 @@ export default function MyCardsPage() {
   }, [user, authLoading, router, fetchCards]);
 
   const handleCopyLink = async (cardId: string, link: string) => {
-    await navigator.clipboard.writeText(link);
-    setCopiedId(cardId);
-    setTimeout(() => setCopiedId(null), 2000);
+    const success = await copyTextToClipboard(link);
+    if (success) {
+      setCopiedId(cardId);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
   };
 
   if (authLoading || (loading && user)) {
@@ -87,8 +100,9 @@ export default function MyCardsPage() {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-white/10">
           <div>
-            <h1 className="font-display text-3xl font-bold text-white mb-1">
-              Thiệp của tôi
+            <h1 className="font-display text-3xl font-bold text-white mb-1 flex items-center gap-2.5">
+              <Layers className="w-7 h-7 text-pink-400" />
+              <span>Thiệp của tôi</span>
             </h1>
             <p className="text-white/50 text-sm">
               Theo dõi và mở xem các thiệp sinh nhật do bạn tạo
@@ -96,17 +110,18 @@ export default function MyCardsPage() {
           </div>
           <Link
             href="/"
-            className="btn-primary py-2.5 px-5 text-sm bg-gradient-to-r from-pink-500 to-purple-600 self-start sm:self-auto rounded-full font-medium"
+            className="btn-primary py-2.5 px-5 text-sm bg-gradient-to-r from-pink-500 to-purple-600 self-start sm:self-auto rounded-full font-medium flex items-center gap-1.5"
           >
-            + Tạo thiệp mới
+            <Plus className="w-4 h-4" />
+            <span>Tạo thiệp mới</span>
           </Link>
         </div>
 
         {/* Cards Grid */}
         {cards.length === 0 ? (
           <div className="glass-card p-12 text-center max-w-md mx-auto my-12">
-            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4 text-white/30 text-2xl font-serif">
-              ✦
+            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4 text-pink-400">
+              <Sparkles className="w-8 h-8" />
             </div>
             <h2 className="text-lg font-semibold text-white mb-2">
               Chưa có thiệp nào
@@ -116,9 +131,10 @@ export default function MyCardsPage() {
             </p>
             <Link
               href="/"
-              className="btn-primary py-2.5 px-6 text-sm bg-gradient-to-r from-pink-500 to-purple-600 rounded-full font-medium"
+              className="btn-primary py-2.5 px-6 text-sm bg-gradient-to-r from-pink-500 to-purple-600 rounded-full font-medium inline-flex items-center gap-1.5"
             >
-              Tạo thiệp ngay
+              <Plus className="w-4 h-4" />
+              <span>Tạo thiệp ngay</span>
             </Link>
           </div>
         ) : (
@@ -157,17 +173,13 @@ export default function MyCardsPage() {
 
                     {/* Meta info */}
                     <div className="space-y-1.5 text-xs text-white/60 mb-6">
-                      <p>
-                        Thời gian mở:{" "}
-                        <span className="text-white/80 font-medium">
-                          {formatRevealTime(new Date(card.revealAt))}
-                        </span>
+                      <p className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                        <span>Mở lúc: {formatRevealTime(new Date(card.revealAt))}</span>
                       </p>
-                      <p>
-                        Số lời chúc đã nhận:{" "}
-                        <span className="text-white/90 font-bold">
-                          {card.wishCount}
-                        </span>
+                      <p className="flex items-center gap-1.5">
+                        <Mail className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                        <span>Số lời chúc: <strong className="text-white/90 font-bold">{card.wishCount}</strong></span>
                       </p>
                     </div>
                   </div>
@@ -176,12 +188,13 @@ export default function MyCardsPage() {
                   <div className="space-y-2 pt-4 border-t border-white/10">
                     <Link
                       href={card.viewLink}
-                      className="w-full block text-center py-2.5 px-4 rounded-xl text-sm font-semibold text-white transition hover:brightness-110"
+                      className="w-full text-center py-2.5 px-4 rounded-xl text-sm font-semibold text-white transition hover:brightness-110 flex items-center justify-center gap-1.5"
                       style={{
                         background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})`,
                       }}
                     >
-                      {card.isRevealed ? "Xem thiệp & Lời chúc" : "Xem màn hình đếm ngược"}
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>{card.isRevealed ? "Xem thiệp & Lời chúc" : "Xem màn hình đếm ngược"}</span>
                     </Link>
 
                     {/* Nút sửa thiệp trước khi mở */}
@@ -191,28 +204,28 @@ export default function MyCardsPage() {
                         onClick={() => setEditingCard(card)}
                         className="w-full py-2 px-4 rounded-xl text-xs font-semibold text-pink-300 hover:text-pink-200 bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/30 transition cursor-pointer flex items-center justify-center gap-1.5"
                       >
-                        <span>✏️</span> Chỉnh sửa thông tin thiệp
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Chỉnh sửa thông tin thiệp</span>
                       </button>
                     )}
 
-                    {/* Nút sao chép lời mời bạn bè đầy đủ */}
+                    {/* Nút sao chép link thuần */}
                     <button
                       type="button"
-                      onClick={async () => {
-                        const inviteMsg = getInviteMessage({
-                          recipientName: card.recipientName,
-                          shareLink: card.shareLink,
-                          shareTitle: card.shareTitle,
-                        });
-                        const ok = await copyTextToClipboard(inviteMsg);
-                        if (ok) {
-                          setCopiedId(card.id);
-                          setTimeout(() => setCopiedId(null), 2000);
-                        }
-                      }}
+                      onClick={() => handleCopyLink(card.id, card.shareLink)}
                       className="w-full py-2 px-4 rounded-xl text-xs font-semibold text-white/90 bg-white/10 hover:bg-white/20 border border-white/20 transition cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      <span>{copiedId === card.id ? "✓ Đã sao chép lời mời" : "📋 Sao chép tin nhắn mời bạn bè"}</span>
+                      {copiedId === card.id ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Đã chép link</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Sao chép link gửi bạn bè</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import StarField from "@/components/StarField";
 import type { ThemeKey } from "@/lib/utils";
 import { THEMES } from "@/lib/utils";
+import { Send, CheckCircle, Search, AlertTriangle, Sparkles, Lock } from "lucide-react";
 
 interface CardStatus {
   recipientName: string;
@@ -180,7 +181,7 @@ export default function WishPage() {
   if (notFound) return (
     <main className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4" style={{ background: "#0a0a0f" }}>
       <div className="glass-card p-10 text-center max-w-sm">
-        <div className="text-4xl mb-3">🔍</div>
+        <Search className="w-12 h-12 text-pink-400 mx-auto mb-3" />
         <h2 className="font-display text-xl text-white mb-2">Không tìm thấy thiệp</h2>
         <p className="text-white/50 text-sm">Liên kết không chính xác hoặc đã hết hạn.</p>
       </div>
@@ -193,7 +194,7 @@ export default function WishPage() {
       <div className="relative z-10 max-w-sm w-full fade-in-up">
         <NotebookCard bg="#fffdf0" lineColor="#f0e8c8" marginColor="#f093b0" tapeColor="#fce38a">
           <div className="py-4 text-center">
-            <div className="text-4xl mb-3">🎉</div>
+            <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
             <h2 className="font-note text-2xl font-bold text-gray-900 mb-1">Đã gửi lời chúc!</h2>
             <p className="font-note text-base text-gray-700 mb-0.5">
               Lời chúc {isAnonymous ? "(ẩn danh) " : ""}của bạn đã được gửi đến
@@ -201,7 +202,10 @@ export default function WishPage() {
             <p className="font-script text-2xl font-bold mb-3" style={{ color: t.primary }}>
               {status?.recipientName}
             </p>
-            <p className="text-xs text-gray-500 italic">Bí mật cho đến đúng 00:00 ngày sinh nhật.</p>
+            <p className="text-xs text-gray-500 italic flex items-center justify-center gap-1">
+              <Lock className="w-3 h-3" />
+              <span>Bí mật cho đến đúng 00:00 ngày sinh nhật.</span>
+            </p>
             <div className="mt-5 pt-3 border-t border-black/10 text-xs text-gray-500">
               Đã có <span className="font-bold text-gray-900">{(status?.wishCount ?? 0) + 1}</span> lời chúc
             </div>
@@ -218,12 +222,18 @@ export default function WishPage() {
 
         {/* Header */}
         <div className="text-center">
-          <h1 className="font-script text-4xl sm:text-5xl text-white mb-1">Viết lời chúc sinh nhật</h1>
+          <h1 className="font-script text-4xl sm:text-5xl text-white mb-1 flex items-center justify-center gap-2">
+            <Sparkles className="w-7 h-7 text-pink-400" />
+            <span>Viết lời chúc sinh nhật</span>
+          </h1>
           <p className="text-white/70 text-sm">
             Gửi tới <span className="font-bold text-base" style={{ color: t.primary }}>{status?.recipientName}</span>
           </p>
           {(status?.wishCount ?? 0) > 0 && (
-            <p className="text-white/40 text-xs mt-1 font-note">📌 Đã có {status?.wishCount} người gửi lời chúc</p>
+            <p className="text-white/40 text-xs mt-1 font-note flex items-center justify-center gap-1">
+              <Sparkles className="w-3 h-3 text-pink-400" />
+              <span>Đã có {status?.wishCount} người gửi lời chúc</span>
+            </p>
           )}
         </div>
 
@@ -281,7 +291,10 @@ export default function WishPage() {
                 />
               )}
               {fieldErrors.authorName && (
-                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠ {fieldErrors.authorName}</p>
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>{fieldErrors.authorName}</span>
+                </p>
               )}
             </div>
 
@@ -299,31 +312,46 @@ export default function WishPage() {
                 onChange={(e) => { setMessage(e.target.value); setFieldErrors({ ...fieldErrors, message: undefined }); }}
                 maxLength={500}
               />
-              {fieldErrors.message
-                ? <p className="text-xs text-red-500 mt-1 flex items-center gap-1">⚠ {fieldErrors.message}</p>
-                : <p className="text-xs text-gray-400 text-right mt-0.5 font-mono">{message.length}/500</p>
-              }
+              {fieldErrors.message ? (
+                <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  <span>{fieldErrors.message}</span>
+                </p>
+              ) : (
+                <p className="text-xs text-gray-400 text-right mt-0.5 font-mono">{message.length}/500</p>
+              )}
             </div>
 
             {submitError && (
-              <div className="bg-red-100 border border-red-300 rounded p-3 text-red-700 text-sm">{submitError}</div>
+              <div className="bg-red-100 border border-red-300 rounded p-3 text-red-700 text-sm flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>{submitError}</span>
+              </div>
             )}
 
             <button
               type="submit"
-              className="btn-primary w-full py-3 text-sm font-bold rounded-xl"
+              className="btn-primary w-full py-3 text-sm font-bold rounded-xl flex items-center justify-center gap-2"
               style={{ background: `linear-gradient(135deg, ${t.primary}, ${t.secondary})` }}
               disabled={submitting}
             >
-              {submitting
-                ? <><span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />Đang gửi...</>
-                : isAnonymous ? "Gửi lời chúc ẩn danh 📌" : "Gửi lời chúc 📌"
-              }
+              {submitting ? (
+                <>
+                  <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                  <span>Đang gửi...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>{isAnonymous ? "Gửi lời chúc ẩn danh" : "Gửi lời chúc"}</span>
+                </>
+              )}
             </button>
           </form>
 
-          <p className="text-xs text-gray-400 text-center mt-3 italic font-note">
-            Lời chúc được giữ bí mật cho đến khi mở thiệp
+          <p className="text-xs text-gray-400 text-center mt-3 italic font-note flex items-center justify-center gap-1">
+            <Lock className="w-3 h-3" />
+            <span>Lời chúc được giữ bí mật cho đến khi mở thiệp</span>
           </p>
         </NotebookCard>
       </div>

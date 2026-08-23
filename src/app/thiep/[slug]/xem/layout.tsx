@@ -32,6 +32,7 @@ export async function generateMetadata({
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://hpbd-mail.vercel.app";
     const fullUrl = `${baseUrl}/thiep/${slug}/xem`;
+    const ogImageUrl = `${baseUrl}/thiep/${slug}/xem/opengraph-image`;
 
     return {
       title,
@@ -44,11 +45,28 @@ export async function generateMetadata({
         siteName: "HPBD • Thiệp Sinh Nhật",
         locale: "vi_VN",
         type: "website",
+        images: [
+          {
+            url: ogImageUrl,
+            width: 1200,
+            height: 630,
+            alt: title,
+            type: "image/png",
+          },
+        ],
       },
       twitter: {
-        card: "summary",
+        card: "summary_large_image",
         title,
         description,
+        images: [ogImageUrl],
+      },
+      other: {
+        "og:image": ogImageUrl,
+        "og:image:secure_url": ogImageUrl,
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
       },
     };
   } catch {

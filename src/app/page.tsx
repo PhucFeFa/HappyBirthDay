@@ -12,8 +12,24 @@ import PolaroidStack from "@/components/PolaroidStack";
 import type { ThemeKey, CelebrationEffectKey } from "@/lib/utils";
 import { THEMES, slugify } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
-
-import { copyTextToClipboard, getInviteMessage, shareLinkOrCopy } from "@/lib/clipboard";
+import { copyTextToClipboard, shareLinkOrCopy } from "@/lib/clipboard";
+import {
+  Copy,
+  Check,
+  Sparkles,
+  Share2,
+  MessageSquare,
+  AlertTriangle,
+  Trash2,
+  Upload,
+  Link2,
+  Plus,
+  X,
+  ExternalLink,
+  Layers,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 
 interface CreatedCard {
   shareLink: string;
@@ -26,6 +42,7 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
+    // Chỉ copy thuần chuỗi text/URL
     const success = await copyTextToClipboard(text);
     if (success) {
       setCopied(true);
@@ -34,8 +51,22 @@ function CopyButton({ text, label }: { text: string; label?: string }) {
   };
 
   return (
-    <button type="button" className="copy-btn" onClick={handleCopy}>
-      {copied ? "Đã sao chép" : label || "Sao chép"}
+    <button
+      type="button"
+      className="copy-btn flex items-center gap-1.5"
+      onClick={handleCopy}
+    >
+      {copied ? (
+        <>
+          <Check className="w-3.5 h-3.5 text-emerald-400" />
+          <span>Đã chép link</span>
+        </>
+      ) : (
+        <>
+          <Copy className="w-3.5 h-3.5" />
+          <span>{label || "Sao chép link"}</span>
+        </>
+      )}
     </button>
   );
 }
@@ -110,25 +141,97 @@ export default function HomePage() {
 
   const t = THEMES[theme];
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  // Ngày tối thiểu là ngày mai
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDateTime = `${tomorrow.toISOString().split("T")[0]}T00:00`;
 
-    const newFieldErrors: typeof fieldErrors = {};
-    if (!recipientName.trim()) {
-      newFieldErrors.recipientName = "Vui lòng nhập tên người nhận";
-    }
-    if (!revealAt) {
-      newFieldErrors.revealAt = "Vui lòng chọn ngày sinh nhật để mở thiệp";
-    }
+  // Xử lý tải ảnh từ máy tính / điện thoại
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    if (Object.keys(newFieldErrors).length > 0) {
-      setFieldErrors(newFieldErrors);
+    const remainingSlots = 6 - images.length;
+    if (remainingSlots <= 0) {
+      alert("Bạn đã chọn tối đa 6 tấm ảnh kỷ niệm!");
       return;
     }
 
-    setFieldErrors({});
+    const filesToProcess = Array.from(files).slice(0, remainingSlots);
+    setCompressing(true);
+
+    try {
+      const compressedList: string[] = [];
+      for (const file of filesToProcess) {
+        if (!file.type.startsWith("image/")) continue;
+        const compressedBase64 = await compressImageFile(file);
+        compressedList.push(compressedBase64);
+      }
+      setImages((prev) => [...prev, ...compressedList]);
+    } catch (err) {
+      console.error(err);
+      setError("Có lỗi khi nén ảnh, vui lòng thử lại ảnh khác.");
+    } finally {
+      setCompressing(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  // Thêm ảnh từ URL
+  const handleAddUrlImage = () => {
+    if (!urlInput.trim()) return;
+    if (images.length >= 6) {
+      alert("Bạn đã chọn tối đa 6 tấm ảnh!");
+      return;
+    }
+    setImages((prev) => [...prev, urlInput.trim()]);
+    setUrlInput("");
+  };
+
+  // Xóa từng ảnh
+  const handleRemoveImage = (idxToRemove: number) => {
+    setImages((prev) => prev.filter((_, idx) => idx !== idxToRemove));
+  };
+
+  // Xóa toàn bộ ảnh
+  const handleClearAllImages = () => {
+    setImages([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const validate = () => {
+    const errors: typeof fieldErrors = {};
+    if (!recipientName.trim()) {
+      errors.recipientName = "Vui lòng nhập tên người nhận";
+    }
+    if (!revealAt) {
+      errors.revealAt = "Vui lòng chọn ngày mở thiệp";
+    } else {
+      const selected = new Date(revealAt);
+      if (isNaN(selected.getTime())) {
+        errors.revealAt = "Ngày giờ không hợp lệ";
+      } else if (selected.getTime() <= Date.now()) {
+        errors.revealAt = "Ngày sinh nhật phải ở tương lai";
+      }
+    }
+
+    if (customSlug.trim()) {
+      const slugFormatted = slugify(customSlug);
+      if (slugFormatted.length < 3) {
+        errors.customSlug = "Link tùy chỉnh phải có ít nhất 3 ký tự";
+      }
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validate()) return;
+
     setLoading(true);
+    setError("");
 
     try {
       const res = await fetch("/api/cards", {
@@ -136,24 +239,22 @@ export default function HomePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           recipientName: recipientName.trim(),
-          revealAt,
+          revealAt: new Date(revealAt).toISOString(),
           theme,
-          description: description.trim() || undefined,
-          imageUrl: images[0] || undefined,
-          imageUrls: images.length > 0 ? images : undefined,
-          userId: user?.uid || null,
-          creatorEmail: user?.email || null,
           celebrationEffect,
-          customSlug: customSlug.trim() || undefined,
+          description: description.trim(),
+          imageUrls: images,
+          imageUrl: images.length > 0 ? images[0] : "",
+          customSlug: customSlug.trim() ? slugify(customSlug) : undefined,
           shareTitle: shareTitle.trim() || undefined,
           shareDescription: shareDescription.trim() || undefined,
+          userId: user?.uid,
         }),
       });
 
       const data = await res.json();
-
       if (!res.ok) {
-        setError(data.error ?? "Có lỗi xảy ra khi tạo thiệp");
+        setError(data.error || "Không thể tạo thiệp. Vui lòng thử lại.");
         return;
       }
 
@@ -161,112 +262,37 @@ export default function HomePage() {
         shareLink: data.shareLink,
         creatorLink: data.creatorLink,
         recipientName: recipientName.trim(),
+        shareTitle: shareTitle.trim(),
       });
     } catch {
-      setError("Không thể kết nối đến máy chủ");
+      setError("Lỗi kết nối máy chủ. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Min datetime = today
-  const minDateTime = new Date().toISOString().slice(0, 16);
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    if (images.length + files.length > 6) {
-      setError("Bạn có thể thêm tối đa 6 tấm ảnh kỷ niệm");
-      return;
-    }
-
-    try {
-      setCompressing(true);
-      setError("");
-      const newImages: string[] = [];
-
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (file.type.startsWith("image/")) {
-          const compressed = await compressImageFile(file);
-          newImages.push(compressed);
-        }
-      }
-
-      setImages((prev) => [...prev, ...newImages]);
-    } catch (err: unknown) {
-      const errorObj = err as Error;
-      setError(errorObj.message || "Lỗi khi xử lý hình ảnh");
-    } finally {
-      setCompressing(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  const handleAddUrlImage = () => {
-    if (!urlInput.trim()) return;
-    if (images.length >= 6) {
-      setError("Bạn có thể thêm tối đa 6 tấm ảnh kỷ niệm");
-      return;
-    }
-    setImages((prev) => [...prev, urlInput.trim()]);
-    setUrlInput("");
-  };
-
-  const handleRemoveImage = (idxToRemove: number) => {
-    setImages((prev) => prev.filter((_, idx) => idx !== idxToRemove));
-  };
-
-  const handleClearAllImages = () => {
-    setImages([]);
-    setUrlInput("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-
+  // Màn hình hiển thị kết quả sau khi tạo thiệp
   if (created) {
     return (
-      <main
-        className="min-h-[calc(100vh-4rem)] relative flex items-center justify-center p-3 sm:p-4"
-        style={{
-          background: `radial-gradient(ellipse at top, ${t.primary}20, transparent 60%), 
-                       radial-gradient(ellipse at bottom, ${t.secondary}15, transparent 60%),
-                       #0a0a0f`,
-        }}
-      >
+      <main className="min-h-[calc(100vh-4rem)] relative flex items-center justify-center p-4 py-8">
         <StarField />
-        <div className="relative z-10 w-full max-w-lg fade-in-up">
-          <div className="glass-card p-6 sm:p-8 text-center">
-            <div
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-xl sm:text-2xl font-serif text-white mx-auto mb-4"
-              style={{ background: `linear-gradient(135deg, ${t.primary}, ${t.secondary})` }}
-            >
-              ✦
-            </div>
+        <div className="glass-card max-w-xl w-full p-6 sm:p-8 text-center relative z-10 fade-in-up">
+          {/* Cake animation */}
+          <div className="my-4 flex justify-center scale-90 sm:scale-100">
+            <BirthdayCake theme={theme} isRevealed={true} />
+          </div>
 
-            <h2 className="font-display text-xl sm:text-2xl font-bold text-white mb-2">
-              Khởi tạo thiệp thành công
-            </h2>
-            <p className="text-white/60 text-xs sm:text-sm mb-6">
-              Dành cho <span className="text-white font-semibold">{created.recipientName}</span>
-            </p>
+          <h2 className="font-display text-2xl sm:text-3xl font-bold text-white mb-2">
+            Khởi tạo thiệp thành công!
+          </h2>
+          <p className="text-white/70 text-xs sm:text-sm mb-6 max-w-md mx-auto">
+            Thiệp của <span className="text-pink-400 font-semibold">{created.recipientName}</span> đã sẵn sàng.
+            Hãy gửi link cho bạn bè để cùng viết những lời chúc bí mật!
+          </p>
 
-            {/* Thông báo lưu tài khoản */}
-            {user ? (
-              <div className="mb-6 p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white/70 text-left flex items-center justify-between gap-3">
-                <span>Thiệp đã được liên kết với tài khoản của bạn.</span>
-                <Link
-                  href="/my-cards"
-                  className="font-semibold text-pink-400 hover:text-pink-300 whitespace-nowrap"
-                >
-                  Xem thiệp →
-                </Link>
-              </div>
-            ) : (
-              <div className="mb-6 p-3 rounded-xl bg-white/5 border border-white/10 text-xs text-white/60 text-left">
-                <span>Mẹo: Bạn có thể </span>
+          <div className="space-y-4">
+            {!user && (
+              <div className="p-3 bg-pink-500/10 border border-pink-500/20 rounded-xl text-xs text-pink-300">
                 <Link href="/login" className="text-pink-400 hover:text-pink-300 font-semibold underline">
                   Đăng nhập
                 </Link>
@@ -280,51 +306,43 @@ export default function HomePage() {
                 <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">
                   Link gửi bạn bè viết thiệp
                 </span>
-                <CopyButton text={created.shareLink} label="Chỉ copy link" />
+                <CopyButton text={created.shareLink} label="Sao chép link" />
               </div>
               <div className="link-box text-xs break-all mb-2 font-mono text-pink-300 font-medium">
                 {created.shareLink}
               </div>
 
-              {/* Nút copy tin nhắn mời bạn bè đầy đủ link và lời nhắn */}
+              {/* Nút thao tác copy và gửi */}
               <div className="flex flex-col sm:flex-row gap-2 mt-2">
                 <button
                   type="button"
                   onClick={async () => {
-                    const inviteMsg = getInviteMessage({
-                      recipientName: created.recipientName,
-                      shareLink: created.shareLink,
-                      shareTitle: created.shareTitle,
-                    });
-                    const ok = await copyTextToClipboard(inviteMsg);
+                    const ok = await copyTextToClipboard(created.shareLink);
                     if (ok) {
-                      alert(`✓ ĐÃ SAO CHÉP LỜI MỜI KÈM LINK!\n\nNội dung đã sao chép:\n"${inviteMsg}"\n\n👉 Bạn hãy dán (Paste) vào Messenger, Zalo hoặc Instagram để gửi cho bạn bè nhé!`);
+                      alert(`✓ ĐÃ SAO CHÉP ĐƯỜNG LINK THIỆP!\n\n${created.shareLink}\n\n👉 Bạn hãy dán (Paste) vào Messenger, Zalo hoặc Instagram để gửi nhé!`);
                     } else {
                       alert("Vui lòng sao chép thủ công đường link bên trên.");
                     }
                   }}
                   className="flex-1 py-2.5 px-3 rounded-xl bg-pink-500/25 hover:bg-pink-500/35 border border-pink-500/50 text-pink-200 text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shadow-sm"
                 >
-                  <span>📋</span> Sao chép tin nhắn mời bạn bè (Có link đầy đủ)
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Sao chép đường link</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={async () => {
-                    const inviteMsg = getInviteMessage({
-                      recipientName: created.recipientName,
-                      shareLink: created.shareLink,
-                      shareTitle: created.shareTitle,
-                    });
                     await shareLinkOrCopy({
                       title: `Thiệp sinh nhật ${created.recipientName}`,
-                      text: inviteMsg,
+                      text: "",
                       url: created.shareLink,
                     });
                   }}
                   className="py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0"
                 >
-                  <span>📲</span> Gửi Messenger/Zalo
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Gửi qua ứng dụng</span>
                 </button>
               </div>
             </div>
@@ -335,7 +353,7 @@ export default function HomePage() {
                 <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">
                   Link mở thiệp (Dành riêng cho bạn / người nhận)
                 </span>
-                <CopyButton text={created.creatorLink} label="Copy link mở thiệp" />
+                <CopyButton text={created.creatorLink} label="Sao chép link mở" />
               </div>
               <div className="link-box text-xs break-all font-mono text-white/70">{created.creatorLink}</div>
             </div>
@@ -343,16 +361,17 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href={created.creatorLink}
-                className="btn-primary flex-1 py-3 text-sm font-semibold rounded-xl text-center"
+                className="btn-primary flex-1 py-3 text-sm font-semibold rounded-xl text-center flex items-center justify-center gap-2"
                 style={{
                   background: `linear-gradient(135deg, ${t.primary}, ${t.secondary})`,
                 }}
               >
-                Mở trang đếm ngược
+                <ExternalLink className="w-4 h-4" />
+                <span>Mở trang đếm ngược</span>
               </Link>
               <button
                 type="button"
-                className="btn-secondary py-3 px-5 text-sm font-medium rounded-xl"
+                className="btn-secondary py-3 px-5 text-sm font-medium rounded-xl flex items-center justify-center gap-2"
                 onClick={() => {
                   setCreated(null);
                   setRecipientName("");
@@ -361,7 +380,8 @@ export default function HomePage() {
                   handleClearAllImages();
                 }}
               >
-                Tạo thêm thiệp
+                <Plus className="w-4 h-4" />
+                <span>Tạo thêm thiệp</span>
               </button>
             </div>
           </div>
@@ -385,9 +405,12 @@ export default function HomePage() {
       <div className="relative z-10 w-full max-w-5xl">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
-          <h1 className="font-script text-4xl sm:text-6xl mb-1.5 gradient-text">
-            HappyBirthday
-          </h1>
+          <div className="flex items-center justify-center gap-2 mb-1.5">
+            <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-pink-400" />
+            <h1 className="font-script text-4xl sm:text-6xl gradient-text">
+              HappyBirthday
+            </h1>
+          </div>
           <p className="text-white/60 text-xs sm:text-base px-2">
             Tạo thiệp sinh nhật bí mật — mở đúng 00:00 ngày sinh nhật
           </p>
@@ -396,8 +419,9 @@ export default function HomePage() {
         <div className="grid lg:grid-cols-12 gap-6 sm:gap-8 items-start">
           {/* Form */}
           <div className="glass-card p-5 sm:p-8 lg:col-span-7">
-            <h2 className="font-display text-lg sm:text-2xl font-bold text-white mb-5">
-              Tạo thiệp mới
+            <h2 className="font-display text-lg sm:text-2xl font-bold text-white mb-5 flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-pink-400" />
+              <span>Tạo thiệp mới</span>
             </h2>
 
             <form onSubmit={handleSubmit} noValidate className="space-y-4 sm:space-y-5">
@@ -420,7 +444,8 @@ export default function HomePage() {
                 />
                 {fieldErrors.recipientName && (
                   <p className="text-xs text-red-400 mt-1.5 flex items-center gap-1">
-                    <span>⚠</span> {fieldErrors.recipientName}
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>{fieldErrors.recipientName}</span>
                   </p>
                 )}
               </div>
@@ -435,9 +460,10 @@ export default function HomePage() {
                     <button
                       type="button"
                       onClick={() => setCustomSlug(slugify(recipientName))}
-                      className="text-[11px] text-pink-400 hover:text-pink-300 font-medium cursor-pointer"
+                      className="text-[11px] text-pink-400 hover:text-pink-300 font-medium cursor-pointer flex items-center gap-1"
                     >
-                      ✦ Gợi ý theo tên
+                      <Sparkles className="w-3 h-3" />
+                      <span>Gợi ý theo tên</span>
                     </button>
                   )}
                 </div>
@@ -460,7 +486,7 @@ export default function HomePage() {
                       className="text-white/40 hover:text-white text-xs px-2.5 py-1 cursor-pointer"
                       title="Xóa link tùy chỉnh"
                     >
-                      ✕
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
@@ -477,10 +503,21 @@ export default function HomePage() {
                   className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-white/5 transition cursor-pointer"
                 >
                   <span className="text-xs font-semibold text-white/80 flex items-center gap-1.5">
-                    <span>💬</span> Tùy chỉnh tin nhắn khi gửi link (Messenger / Zalo)
+                    <MessageSquare className="w-3.5 h-3.5 text-pink-400" />
+                    <span>Tùy chỉnh tin nhắn khi gửi link (Messenger / Zalo)</span>
                   </span>
-                  <span className="text-xs text-white/40 font-mono">
-                    {showShareSettings ? "▲ Đóng" : "▼ Mở rộng"}
+                  <span className="text-xs text-white/40 flex items-center gap-1">
+                    {showShareSettings ? (
+                      <>
+                        <span>Đóng</span>
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      </>
+                    ) : (
+                      <>
+                        <span>Mở rộng</span>
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </>
+                    )}
                   </span>
                 </button>
 
@@ -492,7 +529,7 @@ export default function HomePage() {
                       </label>
                       <input
                         type="text"
-                        placeholder={`Mặc định: 💌 Gửi lời chúc sinh nhật đến ${recipientName.trim() || "Người nhận"}! 🎂`}
+                        placeholder={`Mặc định: Sinh nhật của ${recipientName.trim() || "Người nhận"}`}
                         value={shareTitle}
                         onChange={(e) => setShareTitle(e.target.value)}
                         className="form-input text-xs py-2"
@@ -506,7 +543,7 @@ export default function HomePage() {
                       </label>
                       <input
                         type="text"
-                        placeholder="Mặc định: Cùng viết những lời chúc yêu thương bí mật dành tặng..."
+                        placeholder="Mặc định: Nếu muốn gửi lời chúc tới sinh nhật tuiii..."
                         value={shareDescription}
                         onChange={(e) => setShareDescription(e.target.value)}
                         className="form-input text-xs py-2"
@@ -521,10 +558,10 @@ export default function HomePage() {
                       </span>
                       <div className="rounded-md bg-white/10 p-2.5 border border-white/15">
                         <span className="text-xs font-bold text-white block line-clamp-1">
-                          {shareTitle.trim() || `💌 Gửi lời chúc sinh nhật đến ${recipientName.trim() || "Người nhận"}! 🎂`}
+                          {shareTitle.trim() || `Sinh nhật của ${recipientName.trim() || "Người nhận"}`}
                         </span>
                         <span className="text-[11px] text-white/70 block line-clamp-2 mt-0.5">
-                          {shareDescription.trim() || "Cùng gửi những phong bì lời chúc yêu thương bí mật trong ngày sinh nhật nhé! 🎉"}
+                          {shareDescription.trim() || "Nếu muốn gửi lời chúc tới sinh nhật tuiii..."}
                         </span>
                         <span className="text-[9.5px] text-pink-300/80 font-mono tracking-wider block mt-1.5 truncate">
                           {typeof window !== "undefined" ? window.location.host : "hpbd-mail.vercel.app"}
@@ -555,7 +592,8 @@ export default function HomePage() {
                 />
                 {fieldErrors.revealAt && (
                   <p className="text-xs text-red-400 mt-1.5 flex items-center gap-1">
-                    <span>⚠</span> {fieldErrors.revealAt}
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>{fieldErrors.revealAt}</span>
                   </p>
                 )}
               </div>
@@ -578,8 +616,9 @@ export default function HomePage() {
               {/* Image attachment section */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="form-label mb-0 text-xs sm:text-sm">
-                    Hình ảnh kỷ niệm Polaroid ({images.length}/6){" "}
+                  <label className="form-label mb-0 text-xs sm:text-sm flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-pink-400" />
+                    <span>Hình ảnh kỷ niệm Polaroid ({images.length}/6)</span>
                     <span className="text-white/40 font-normal">(Tùy chọn)</span>
                   </label>
                   {/* Mode switcher tabs */}
@@ -587,24 +626,26 @@ export default function HomePage() {
                     <button
                       type="button"
                       onClick={() => setImageMode("upload")}
-                      className={`px-2.5 py-1 rounded-md transition ${
+                      className={`px-2.5 py-1 rounded-md transition flex items-center gap-1 ${
                         imageMode === "upload"
                           ? "bg-white/20 text-white font-medium shadow-sm"
                           : "text-white/50 hover:text-white"
                       }`}
                     >
-                      Từ máy
+                      <Upload className="w-3 h-3" />
+                      <span>Từ máy</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setImageMode("url")}
-                      className={`px-2.5 py-1 rounded-md transition ${
+                      className={`px-2.5 py-1 rounded-md transition flex items-center gap-1 ${
                         imageMode === "url"
                           ? "bg-white/20 text-white font-medium shadow-sm"
                           : "text-white/50 hover:text-white"
                       }`}
                     >
-                      Dán link
+                      <Link2 className="w-3 h-3" />
+                      <span>Dán link</span>
                     </button>
                   </div>
                 </div>
@@ -627,9 +668,7 @@ export default function HomePage() {
                         className="w-full flex flex-col items-center justify-center p-3.5 sm:p-5 border-2 border-dashed border-white/20 rounded-2xl hover:border-white/40 hover:bg-white/5 transition cursor-pointer group text-center mb-3"
                       >
                         <div className="w-9 h-9 rounded-full bg-white/5 flex items-center justify-center text-white/60 group-hover:text-white group-hover:scale-110 transition mb-1.5">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
+                          <Upload className="w-4 h-4" />
                         </div>
                         <span className="text-xs font-semibold text-white/85 group-hover:text-white">
                           {compressing ? "Đang xử lý ảnh..." : "Bấm để chọn ảnh từ thiết bị (Có thể chọn nhiều ảnh)"}
@@ -654,9 +693,10 @@ export default function HomePage() {
                         type="button"
                         onClick={handleAddUrlImage}
                         disabled={!urlInput.trim() || images.length >= 6}
-                        className="btn-secondary text-xs px-3.5 py-2 shrink-0 cursor-pointer disabled:opacity-40"
+                        className="btn-secondary text-xs px-3.5 py-2 shrink-0 cursor-pointer disabled:opacity-40 flex items-center gap-1"
                       >
-                        + Thêm
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Thêm</span>
                       </button>
                     </div>
                   </div>
@@ -666,15 +706,17 @@ export default function HomePage() {
                 {images.length > 0 && (
                   <div className="p-3 rounded-2xl bg-white/5 border border-white/10 mt-3">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-white/70 font-medium">
-                        Đã thêm {images.length}/6 tấm ảnh
+                      <span className="text-xs text-white/70 font-medium flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-pink-400" />
+                        <span>Đã thêm {images.length}/6 tấm ảnh</span>
                       </span>
                       <button
                         type="button"
                         onClick={handleClearAllImages}
-                        className="text-[11px] text-red-400 hover:text-red-300 font-medium cursor-pointer"
+                        className="text-[11px] text-red-400 hover:text-red-300 font-medium cursor-pointer flex items-center gap-1"
                       >
-                        Xóa tất cả
+                        <Trash2 className="w-3 h-3" />
+                        <span>Xóa tất cả</span>
                       </button>
                     </div>
                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
@@ -693,9 +735,9 @@ export default function HomePage() {
                           <button
                             type="button"
                             onClick={() => handleRemoveImage(idx)}
-                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center shadow-md hover:scale-110 transition cursor-pointer"
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md hover:scale-110 transition cursor-pointer"
                           >
-                            ✕
+                            <X className="w-3 h-3" />
                           </button>
                         </div>
                       ))}
@@ -726,14 +768,15 @@ export default function HomePage() {
               </div>
 
               {error && (
-                <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-3 text-red-300 text-xs sm:text-sm">
-                  {error}
+                <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-3 text-red-300 text-xs sm:text-sm flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{error}</span>
                 </div>
               )}
 
               <button
                 type="submit"
-                className="btn-primary btn-shimmer w-full mt-2 py-3 text-xs sm:text-sm font-semibold rounded-xl"
+                className="btn-primary btn-shimmer w-full mt-2 py-3 text-xs sm:text-sm font-semibold rounded-xl flex items-center justify-center gap-2"
                 style={{
                   background: `linear-gradient(135deg, ${t.primary}, ${t.secondary})`,
                 }}
@@ -742,10 +785,13 @@ export default function HomePage() {
                 {loading ? (
                   <>
                     <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                    Đang khởi tạo...
+                    <span>Đang khởi tạo...</span>
                   </>
                 ) : (
-                  "Tạo thiệp ngay"
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Tạo thiệp ngay</span>
+                  </>
                 )}
               </button>
             </form>

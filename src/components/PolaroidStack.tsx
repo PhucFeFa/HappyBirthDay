@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ZoomIn, Sparkles, X } from "lucide-react";
 
 interface PolaroidStackProps {
   images: string[];
@@ -21,61 +22,87 @@ export default function PolaroidStack({
   images,
   recipientName = "Kỷ niệm",
 }: PolaroidStackProps) {
-  const [activeIdx, setActiveIdx] = useState<number>(0);
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
+  const total = images?.length ?? 0;
+  const currentSelected = hoveredIdx !== null ? hoveredIdx : (activeIdx ?? (total > 0 ? total - 1 : 0));
+
+  // Tính toán góc xòe và khoảng cách bậc thang ngang
+  const cardsLayout = useMemo(() => {
+    return images.map((_, idx) => {
+      if (total === 1) {
+        return { rotate: 0, x: 0, y: 0, zIndex: 10 };
+      }
+      const centerFactor = (idx - (total - 1) / 2);
+      const rotate = centerFactor * (24 / Math.max(1, total - 1));
+      const x = centerFactor * 42;
+      const y = Math.abs(centerFactor) * 8;
+
+      return {
+        rotate,
+        x,
+        y,
+        zIndex: idx + 1,
+      };
+    });
+  }, [images, total]);
+
   if (!images || images.length === 0) return null;
 
-  const isSingle = images.length === 1;
-  const currentSelected = hoveredIdx !== null ? hoveredIdx : activeIdx;
+  const isSingle = total === 1;
 
   return (
     <div className="relative my-6 sm:my-8 flex flex-col items-center select-none w-full max-w-2xl px-2">
       {/* ─── BỘ BÀI ẢNH POLAROID XÒE NAN QUẠT / BẬC THANG ─── */}
-      <div className="relative w-full h-72 sm:h-84 flex items-center justify-center overflow-visible">
+      <div
+        className="relative flex items-center justify-center overflow-visible"
+        style={{
+          width: isSingle ? "240px" : "330px",
+          height: isSingle ? "280px" : "250px",
+        }}
+      >
         {images.map((img, idx) => {
           const tapeColor = WASHI_TAPES[idx % WASHI_TAPES.length];
           const isCurrent = currentSelected === idx;
-
-          // Tính toán vị trí xòe nan quạt bậc thang ngang
-          const total = images.length;
-          const centerFactor = total > 1 ? (idx - (total - 1) / 2) : 0;
-          
-          // Khoảng cách trải ngang đều đặn
-          const baseOffsetX = isSingle ? 0 : centerFactor * 42; // Mobile
-          const baseRotate = isSingle ? -1 : centerFactor * 5.5; // Góc nghiêng nan quạt
-          const baseOffsetY = isSingle ? 0 : Math.abs(centerFactor) * 4;
+          const layout = cardsLayout[idx] || { rotate: 0, x: 0, y: 0, zIndex: 10 };
 
           return (
             <motion.div
-              key={idx}
-              className="absolute cursor-pointer transition-all duration-300 transform-gpu"
+              key={`polaroid-${idx}`}
+              className="absolute cursor-pointer origin-bottom"
               style={{
-                zIndex: isCurrent ? 50 : idx + 10,
+                zIndex: isCurrent ? 50 : layout.zIndex,
               }}
+              initial={false}
               animate={{
-                x: isCurrent ? baseOffsetX : baseOffsetX,
-                y: isCurrent ? baseOffsetY - 24 : baseOffsetY,
-                rotate: isCurrent ? 0 : baseRotate,
-                scale: isCurrent ? 1.1 : 0.96,
+                rotate: isCurrent ? 0 : layout.rotate,
+                x: isCurrent ? 0 : layout.x,
+                y: isCurrent ? -24 : layout.y,
+                scale: isCurrent ? (isSingle ? 1.05 : 1.1) : 1,
               }}
-              transition={{ type: "spring", stiffness: 380, damping: 24 }}
+              whileHover={{
+                y: isCurrent ? -28 : layout.y - 14,
+                scale: isCurrent ? (isSingle ? 1.08 : 1.14) : 1.05,
+                zIndex: 60,
+                transition: { duration: 0.2 },
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 280,
+                damping: 22,
+              }}
               onMouseEnter={() => setHoveredIdx(idx)}
               onMouseLeave={() => setHoveredIdx(null)}
               onClick={() => {
-                if (isCurrent && !isSingle) {
-                  // Bấm lần nữa vào ảnh đang chọn ➜ Mở phóng to
+                if (isCurrent && total > 1) {
                   setZoomedImage(img);
                 } else {
                   setActiveIdx(idx);
                 }
               }}
-              tabIndex={0}
-              role="button"
-              aria-label={`Xem ảnh kỷ niệm ${idx + 1}`}
             >
-              {/* Thẻ ảnh Polaroid */}
               <div
                 className={`bg-[#fffefc] p-2 sm:p-2.5 pb-6 sm:pb-7 rounded-[4px] border transition-all duration-300 relative ${
                   isCurrent
@@ -113,10 +140,10 @@ export default function PolaroidStack({
                         e.stopPropagation();
                         setZoomedImage(img);
                       }}
-                      className="absolute bottom-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 hover:bg-black text-white text-[10px] flex items-center justify-center shadow-md backdrop-blur-xs transition"
+                      className="absolute bottom-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 hover:bg-black text-white flex items-center justify-center shadow-md backdrop-blur-xs transition"
                       title="Phóng to ảnh"
                     >
-                      🔍
+                      <ZoomIn className="w-3.5 h-3.5" />
                     </div>
                   )}
                 </div>
@@ -124,7 +151,7 @@ export default function PolaroidStack({
                 {/* Dòng ghi chú viết tay dưới viền ảnh Polaroid */}
                 <div className="mt-1.5 text-center">
                   <span className="font-note text-[11px] sm:text-xs text-gray-700 font-bold block truncate px-0.5">
-                    {recipientName} {total > 1 ? `✦ #${idx + 1}` : "✦"}
+                    {recipientName} {total > 1 ? `#${idx + 1}` : ""}
                   </span>
                 </div>
               </div>
@@ -136,7 +163,6 @@ export default function PolaroidStack({
       {/* ─── THANH ĐIỀU HƯỚNG DỄ CHẠM TRÊN ĐIỆN THOẠI & MÁY TÍNH ─── */}
       {images.length > 1 && (
         <div className="mt-3 flex flex-col items-center gap-2">
-          {/* Dãy nút bấm chuyển ảnh trực quan */}
           <div className="flex items-center gap-1.5 bg-white/10 p-1 rounded-full backdrop-blur-sm border border-white/15">
             {images.map((_, idx) => (
               <button
@@ -155,7 +181,8 @@ export default function PolaroidStack({
           </div>
 
           <p className="text-[11px] sm:text-xs text-white/50 font-note flex items-center gap-1 text-center">
-            <span>✨</span> Chạm vào từng ảnh hoặc nút số để lật xem • Bấm 🔍 để phóng to
+            <Sparkles className="w-3 h-3 text-pink-400 inline" />
+            <span>Chạm vào từng ảnh hoặc nút số để lật xem • Bấm phóng to</span>
           </p>
         </div>
       )}
@@ -182,10 +209,10 @@ export default function PolaroidStack({
               <button
                 type="button"
                 onClick={() => setZoomedImage(null)}
-                className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-black/80 text-white font-bold text-sm flex items-center justify-center shadow-lg hover:bg-black transition cursor-pointer"
+                className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-black/80 text-white flex items-center justify-center shadow-lg hover:bg-black transition cursor-pointer"
                 aria-label="Đóng phóng to"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -195,7 +222,7 @@ export default function PolaroidStack({
               />
               <div className="mt-3 text-center">
                 <span className="font-note text-base sm:text-lg text-gray-800 font-bold">
-                  {recipientName} ✦
+                  {recipientName}
                 </span>
               </div>
             </motion.div>

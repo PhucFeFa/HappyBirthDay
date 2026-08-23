@@ -14,6 +14,7 @@ import Envelope from "@/components/Envelope";
 import PolaroidStack from "@/components/PolaroidStack";
 import EditCardModal from "@/components/EditCardModal";
 import { useAuth } from "@/lib/auth-context";
+import { Mail, Edit3, Lock, Sparkles, Clock, Calendar, X } from "lucide-react";
 
 interface StatusData {
   isRevealed: boolean;
@@ -419,8 +420,9 @@ function CountdownScreen({
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             {status.wishCount > 0 && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="glass-card px-5 py-2.5 inline-block">
-                <p className="text-white/70 text-xs sm:text-sm">
-                  📮 Đã có <span className="text-white font-bold">{status.wishCount}</span> phong bì lời chúc
+                <p className="text-white/70 text-xs sm:text-sm flex items-center gap-1.5">
+                  <Mail className="w-4 h-4 text-purple-400 shrink-0" />
+                  <span>Đã có <strong className="text-white font-bold">{status.wishCount}</strong> phong bì lời chúc</span>
                 </p>
               </motion.div>
             )}
@@ -432,7 +434,8 @@ function CountdownScreen({
                 onClick={() => setIsEditing(true)}
                 className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs sm:text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md backdrop-blur-xs"
               >
-                <span>✏️</span> Chỉnh sửa thông tin thiệp
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Chỉnh sửa thông tin thiệp</span>
               </button>
             )}
           </div>
