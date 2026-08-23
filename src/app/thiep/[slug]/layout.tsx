@@ -21,10 +21,15 @@ export async function generateMetadata({
       };
     }
 
-    const title = `💌 Gửi lời chúc sinh nhật đến ${card.recipientName}! 🎂`;
-    const description = card.description
-      ? `"${card.description}" — Cùng gửi những phong bì lời chúc yêu thương dành tặng ${card.recipientName} nhé! 🎉`
-      : `Cùng viết những lời chúc yêu thương bí mật dành tặng ${card.recipientName} trong ngày sinh nhật nhé! 🎉✨`;
+    const title =
+      card.shareTitle?.trim() ||
+      `💌 Gửi lời chúc sinh nhật đến ${card.recipientName}! 🎂`;
+
+    const description =
+      card.shareDescription?.trim() ||
+      (card.description
+        ? `"${card.description}" — Cùng gửi những phong bì lời chúc yêu thương dành tặng ${card.recipientName} nhé! 🎉`
+        : `Cùng viết những lời chúc yêu thương bí mật dành tặng ${card.recipientName} trong ngày sinh nhật nhé! 🎉✨`);
 
     const images =
       card.imageUrls && card.imageUrls.length > 0

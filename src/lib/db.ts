@@ -29,6 +29,8 @@ export interface Card {
   userId?: string;
   creatorEmail?: string;
   celebrationEffect?: CelebrationEffectKey;
+  shareTitle?: string;
+  shareDescription?: string;
 }
 
 export interface Wish {
@@ -51,6 +53,8 @@ export interface CreateCardInput {
   userId?: string;
   creatorEmail?: string;
   celebrationEffect?: CelebrationEffectKey;
+  shareTitle?: string;
+  shareDescription?: string;
 }
 
 export interface CreateWishInput {
@@ -86,6 +90,8 @@ export async function createCard(input: CreateCardInput): Promise<Card> {
   if (input.imageUrls && input.imageUrls.length > 0) payload.imageUrls = input.imageUrls;
   if (input.userId) payload.userId = input.userId;
   if (input.creatorEmail) payload.creatorEmail = input.creatorEmail;
+  if (input.shareTitle) payload.shareTitle = input.shareTitle.trim();
+  if (input.shareDescription) payload.shareDescription = input.shareDescription.trim();
 
   const docRef = await addDoc(collection(db, "cards"), payload);
 
@@ -122,6 +128,8 @@ export async function getCardBySlug(slug: string): Promise<Card | null> {
     userId: data.userId,
     creatorEmail: data.creatorEmail,
     celebrationEffect: (data.celebrationEffect as CelebrationEffectKey) ?? "flowers",
+    shareTitle: data.shareTitle,
+    shareDescription: data.shareDescription,
   };
 }
 
@@ -146,6 +154,8 @@ export async function getCardsByUserId(userId: string): Promise<Card[]> {
       userId: data.userId,
       creatorEmail: data.creatorEmail,
       celebrationEffect: (data.celebrationEffect as CelebrationEffectKey) ?? "flowers",
+      shareTitle: data.shareTitle,
+      shareDescription: data.shareDescription,
     };
   });
 

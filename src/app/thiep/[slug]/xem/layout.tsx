@@ -20,8 +20,14 @@ export async function generateMetadata({
       };
     }
 
-    const title = `🎂 Chúc Mừng Sinh Nhật ${card.recipientName}! ✨`;
-    const description = `Món quà sinh nhật đặc biệt cùng những phong bì thư yêu thương từ bạn bè dành tặng ${card.recipientName}!`;
+    const title =
+      card.shareTitle?.trim() ||
+      `🎂 Chúc Mừng Sinh Nhật ${card.recipientName}! ✨`;
+
+    const description =
+      card.shareDescription?.trim() ||
+      `Món quà sinh nhật đặc biệt cùng những phong bì thư yêu thương từ bạn bè dành tặng ${card.recipientName}!`;
+
     const images =
       card.imageUrls && card.imageUrls.length > 0
         ? [card.imageUrls[0]]

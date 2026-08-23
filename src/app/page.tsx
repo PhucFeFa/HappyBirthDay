@@ -82,6 +82,9 @@ export default function HomePage() {
   const [celebrationEffect, setCelebrationEffect] = useState<CelebrationEffectKey>("flowers");
   const [recipientName, setRecipientName] = useState("");
   const [customSlug, setCustomSlug] = useState("");
+  const [shareTitle, setShareTitle] = useState("");
+  const [shareDescription, setShareDescription] = useState("");
+  const [showShareSettings, setShowShareSettings] = useState(false);
   const [revealAt, setRevealAt] = useState("");
   const [description, setDescription] = useState("");
 
@@ -137,6 +140,8 @@ export default function HomePage() {
           creatorEmail: user?.email || null,
           celebrationEffect,
           customSlug: customSlug.trim() || undefined,
+          shareTitle: shareTitle.trim() || undefined,
+          shareDescription: shareDescription.trim() || undefined,
         }),
       });
 
@@ -413,6 +418,72 @@ export default function HomePage() {
                 <p className="text-[10px] sm:text-[11px] text-white/40 mt-1">
                   Đặt link đẹp dễ nhớ (ví dụ: <span className="text-white/60 font-mono">sinhnhat-linh-2026</span>). Để trống sẽ tự tạo ngẫu nhiên.
                 </p>
+              </div>
+
+              {/* Tùy chỉnh hiển thị khi gửi link qua Messenger/Zalo */}
+              <div className="border border-white/10 rounded-xl bg-white/[0.03] overflow-hidden transition">
+                <button
+                  type="button"
+                  onClick={() => setShowShareSettings(!showShareSettings)}
+                  className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-white/5 transition cursor-pointer"
+                >
+                  <span className="text-xs font-semibold text-white/80 flex items-center gap-1.5">
+                    <span>💬</span> Tùy chỉnh tin nhắn khi gửi link (Messenger / Zalo)
+                  </span>
+                  <span className="text-xs text-white/40 font-mono">
+                    {showShareSettings ? "▲ Đóng" : "▼ Mở rộng"}
+                  </span>
+                </button>
+
+                {showShareSettings && (
+                  <div className="p-3.5 pt-1 space-y-3 border-t border-white/5">
+                    <div>
+                      <label className="text-[11px] text-white/70 block mb-1">
+                        Tiêu đề hiển thị (Share Title)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={`Mặc định: 💌 Gửi lời chúc sinh nhật đến ${recipientName.trim() || "Người nhận"}! 🎂`}
+                        value={shareTitle}
+                        onChange={(e) => setShareTitle(e.target.value)}
+                        className="form-input text-xs py-2"
+                        maxLength={70}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] text-white/70 block mb-1">
+                        Lời mô tả hiển thị (Share Description)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Mặc định: Cùng viết những lời chúc yêu thương bí mật dành tặng..."
+                        value={shareDescription}
+                        onChange={(e) => setShareDescription(e.target.value)}
+                        className="form-input text-xs py-2"
+                        maxLength={120}
+                      />
+                    </div>
+
+                    {/* Live Preview tin nhắn Messenger */}
+                    <div className="p-2.5 rounded-lg bg-black/40 border border-white/10 mt-2">
+                      <span className="text-[10px] text-white/40 block mb-1.5 font-medium">
+                        Xem trước khung tin nhắn khi gửi:
+                      </span>
+                      <div className="rounded-md bg-white/10 p-2.5 border border-white/15">
+                        <span className="text-xs font-bold text-white block line-clamp-1">
+                          {shareTitle.trim() || `💌 Gửi lời chúc sinh nhật đến ${recipientName.trim() || "Người nhận"}! 🎂`}
+                        </span>
+                        <span className="text-[11px] text-white/70 block line-clamp-2 mt-0.5">
+                          {shareDescription.trim() || "Cùng gửi những phong bì lời chúc yêu thương bí mật trong ngày sinh nhật nhé! 🎉"}
+                        </span>
+                        <span className="text-[9px] text-white/40 uppercase tracking-wider block mt-1">
+                          {typeof window !== "undefined" ? window.location.host : "hpbd-app.vercel.app"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Reveal date (Custom DatePicker auto 00:00) */}

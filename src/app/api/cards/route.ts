@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
       creatorEmail,
       celebrationEffect,
       customSlug,
+      shareTitle,
+      shareDescription,
     } = body;
 
     if (!recipientName || !revealAtStr) {
@@ -74,6 +76,8 @@ export async function POST(request: NextRequest) {
       userId: userId || undefined,
       creatorEmail: creatorEmail || undefined,
       celebrationEffect: (celebrationEffect as CelebrationEffectKey) ?? "flowers",
+      shareTitle: shareTitle?.trim() || undefined,
+      shareDescription: shareDescription?.trim() || undefined,
     });
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? request.nextUrl.origin;
