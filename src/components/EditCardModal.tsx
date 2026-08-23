@@ -29,8 +29,8 @@ interface EditCardModalProps {
   onSuccess: () => void;
 }
 
-// Nén ảnh client-side sang Base64 JPEG nhẹ nhàng
-function compressImageFile(file: File, maxDimension = 900, quality = 0.82): Promise<string> {
+// Nén ảnh client-side sang Base64 JPEG nhẹ nhàng (30-50KB/ảnh) để luôn nằm an toàn trong giới hạn 1MB của Firestore
+function compressImageFile(file: File, maxDimension = 540, quality = 0.65): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
