@@ -21,10 +21,9 @@ export default function Navbar() {
         {/* Logo */}
         <Link
           href="/"
-          className="flex items-center gap-2 font-script text-xl sm:text-3xl text-white font-bold tracking-wide hover:opacity-90 transition shrink-0"
+          className="font-script text-2xl sm:text-3xl text-white font-bold tracking-wide hover:opacity-90 transition shrink-0 whitespace-nowrap"
         >
-          <Sparkles className="w-5 h-5 text-pink-400" />
-          <span>HappyBirthday</span>
+          HappyBirthday
         </Link>
 
         {/* Nav Links */}

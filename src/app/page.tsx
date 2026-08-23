@@ -405,12 +405,9 @@ export default function HomePage() {
       <div className="relative z-10 w-full max-w-5xl">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
-          <div className="flex items-center justify-center gap-2 mb-1.5">
-            <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-pink-400" />
-            <h1 className="font-script text-4xl sm:text-6xl gradient-text">
-              HappyBirthday
-            </h1>
-          </div>
+          <h1 className="font-script text-4xl sm:text-6xl gradient-text mb-1.5 inline-block">
+            HappyBirthday
+          </h1>
           <p className="text-white/60 text-xs sm:text-base px-2">
             Tạo thiệp sinh nhật bí mật — mở đúng 00:00 ngày sinh nhật
           </p>
