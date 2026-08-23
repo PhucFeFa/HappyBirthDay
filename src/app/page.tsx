@@ -19,7 +19,7 @@ interface CreatedCard {
   recipientName: string;
 }
 
-function CopyButton({ text }: { text: string }) {
+function CopyButton({ text, label }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -30,7 +30,7 @@ function CopyButton({ text }: { text: string }) {
 
   return (
     <button type="button" className="copy-btn" onClick={handleCopy}>
-      {copied ? "Đã sao chép" : "Sao chép"}
+      {copied ? "Đã sao chép" : label || "Sao chép"}
     </button>
   );
 }
@@ -273,22 +273,37 @@ export default function HomePage() {
             <div className="mb-4 text-left">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">
-                  Link viết lời chúc (Gửi cho bạn bè)
+                  Link gửi bạn bè viết thiệp
                 </span>
-                <CopyButton text={created.shareLink} />
+                <CopyButton text={created.shareLink} label="Chỉ copy link" />
               </div>
-              <div className="link-box text-xs break-all">{created.shareLink}</div>
+              <div className="link-box text-xs break-all mb-2 font-mono text-pink-300 font-medium">
+                {created.shareLink}
+              </div>
+
+              {/* Nút copy tin nhắn mời bạn bè đầy đủ link và lời nhắn */}
+              <button
+                type="button"
+                onClick={() => {
+                  const inviteMsg = `💌 Cùng gửi những phong bì lời chúc bí mật dành tặng ${created.recipientName} trong ngày sinh nhật nhé! 🎉🎂\n👉 Vào viết thiệp tại đây nè: ${created.shareLink}`;
+                  navigator.clipboard.writeText(inviteMsg);
+                  alert("Đã sao chép lời mời kèm đường link đầy đủ! Bạn có thể dán ngay vào Messenger/Zalo để gửi cho bạn bè.");
+                }}
+                className="w-full py-2.5 px-3 rounded-xl bg-pink-500/20 hover:bg-pink-500/30 border border-pink-500/40 text-pink-200 text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
+              >
+                <span>📋</span> Sao chép tin nhắn mời bạn bè (Có kèm link đầy đủ)
+              </button>
             </div>
 
             {/* Creator link */}
             <div className="mb-6 text-left">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-xs font-semibold text-white/80 uppercase tracking-wider">
-                  Link xem thiệp (Dành cho bạn)
+                  Link mở thiệp (Dành riêng cho bạn / người nhận)
                 </span>
-                <CopyButton text={created.creatorLink} />
+                <CopyButton text={created.creatorLink} label="Copy link mở thiệp" />
               </div>
-              <div className="link-box text-xs break-all">{created.creatorLink}</div>
+              <div className="link-box text-xs break-all font-mono text-white/70">{created.creatorLink}</div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
