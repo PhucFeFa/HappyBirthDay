@@ -1,5 +1,7 @@
 import { ImageResponse } from "next/og";
 import { getCardBySlug } from "@/lib/db";
+import fs from "fs";
+import path from "path";
 
 export const runtime = "nodejs";
 export const alt = "Thiệp Sinh Nhật";
@@ -15,35 +17,43 @@ export default async function Image({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  let recipientName = "Người ấy";
-  let shareTitle = "💌 Gửi lời chúc sinh nhật! 🎂";
-  let description = "Cùng viết những lời chúc yêu thương bí mật dành tặng trong ngày sinh nhật nhé! 🎉";
-  let heroImage: string | null = null;
+  let shareTitle = "";
+  let heroImage = "";
 
+  // 1. Đọc ảnh bó hoa mặc định từ public
+  try {
+    const defaultImagePath = path.join(
+      process.cwd(),
+      "public",
+      "anh-bo-hoa-hong-chuc-mung-sinh-nhat.jpg"
+    );
+    if (fs.existsSync(defaultImagePath)) {
+      const fileBuffer = fs.readFileSync(defaultImagePath);
+      heroImage = `data:image/jpeg;base64,${fileBuffer.toString("base64")}`;
+    }
+  } catch (e) {
+    console.error("Error reading default birthday flower image:", e);
+  }
+
+  // 2. Lấy dữ liệu thiệp nếu có
   try {
     const card = await getCardBySlug(slug);
     if (card) {
-      recipientName = card.recipientName || recipientName;
       if (card.shareTitle?.trim()) {
         shareTitle = card.shareTitle.trim();
-      } else {
-        shareTitle = `💌 Gửi lời chúc sinh nhật đến ${recipientName}! 🎂`;
-      }
-      if (card.shareDescription?.trim()) {
-        description = card.shareDescription.trim();
-      } else if (card.description?.trim()) {
-        description = card.description.trim();
+      } else if (card.recipientName?.trim()) {
+        shareTitle = `💌 Gửi lời chúc sinh nhật đến ${card.recipientName}! 🎂`;
       }
 
-      // Lấy ảnh kỷ niệm đầu tiên nếu có
-      if (card.imageUrls && card.imageUrls.length > 0) {
+      // Nếu người tạo có tải ảnh lên thì ưu tiên dùng ảnh đó
+      if (card.imageUrls && card.imageUrls.length > 0 && card.imageUrls[0]) {
         heroImage = card.imageUrls[0];
       } else if (card.imageUrl) {
         heroImage = card.imageUrl;
       }
     }
   } catch (e) {
-    console.error("Error generating OG image:", e);
+    console.error("Error fetching card for OG image:", e);
   }
 
   return new ImageResponse(
@@ -53,238 +63,89 @@ export default async function Image({
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
+          position: "relative",
           alignItems: "center",
-          justifyContent: "space-between",
-          backgroundColor: "#140320",
-          color: "#ffffff",
-          fontFamily: "sans-serif",
-          padding: "36px 44px",
+          justifyContent: "center",
+          backgroundColor: "#000000",
+          overflow: "hidden",
         }}
       >
-        {/* Outer Frame Box */}
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "space-between",
-            backgroundColor: "#220834",
-            border: "4px solid #ff4d6d",
-            borderRadius: "28px",
-            padding: "30px 38px",
-          }}
-        >
-          {/* Top Header Badge */}
+        {/* Chỉ hiển thị mỗi hình ảnh full trọn vẹn */}
+        {heroImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={heroImage}
+            alt={shareTitle || "Sinh nhật"}
+            style={{
+              width: "1200px",
+              height: "630px",
+              objectFit: "cover",
+            }}
+          />
+        ) : (
           <div
             style={{
+              width: "100%",
+              height: "100%",
+              backgroundColor: "#220834",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "48px",
+              color: "#ffd166",
+              fontWeight: "bold",
+            }}
+          >
+            🎂 Chúc Mừng Sinh Nhật! 🎂
+          </div>
+        )}
+
+        {/* Thanh tiêu đề chia sẻ tinh tế đè lên phía dưới ảnh nếu có tiêu đề */}
+        {shareTitle ? (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "24px",
+              left: "30px",
+              right: "30px",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              width: "100%",
+              backgroundColor: "rgba(10, 5, 22, 0.82)",
+              padding: "16px 28px",
+              borderRadius: "20px",
+              border: "2px solid rgba(255, 255, 255, 0.25)",
             }}
           >
+            <div
+              style={{
+                fontSize: "30px",
+                fontWeight: "bold",
+                color: "#ffffff",
+                display: "flex",
+                maxWidth: "820px",
+                overflow: "hidden",
+              }}
+            >
+              {shareTitle}
+            </div>
+
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 backgroundColor: "#ff4d6d",
                 color: "#ffffff",
-                padding: "8px 24px",
-                borderRadius: "50px",
-                fontSize: "18px",
-                fontWeight: "bold",
-                letterSpacing: "1px",
-              }}
-            >
-              🎂 THIỆP SINH NHẬT BÍ MẬT 🎂
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                backgroundColor: "#3b1054",
-                color: "#ffd166",
                 padding: "8px 20px",
-                borderRadius: "14px",
+                borderRadius: "12px",
                 fontSize: "18px",
                 fontWeight: "bold",
-                border: "1px solid #ff4d6d",
               }}
             >
               /thiep/{slug}
             </div>
           </div>
-
-          {/* Main Content: 2 Cột nếu có ảnh, 1 Cột nếu không có ảnh */}
-          {heroImage ? (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                width: "100%",
-                gap: "36px",
-                flex: 1,
-                padding: "12px 0",
-              }}
-            >
-              {/* Cột trái: Khung ảnh Polaroid kỷ niệm */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  backgroundColor: "#ffffff",
-                  padding: "14px 14px 22px 14px",
-                  borderRadius: "16px",
-                  boxShadow: "0 12px 30px rgba(0,0,0,0.6)",
-                  width: "310px",
-                  flexShrink: 0,
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={heroImage}
-                  alt={recipientName}
-                  style={{
-                    width: "282px",
-                    height: "282px",
-                    objectFit: "cover",
-                    borderRadius: "10px",
-                  }}
-                />
-                <div
-                  style={{
-                    marginTop: "12px",
-                    color: "#1a1a1a",
-                    fontWeight: "bold",
-                    fontSize: "20px",
-                    display: "flex",
-                    textAlign: "center",
-                  }}
-                >
-                  {recipientName} ✨💖
-                </div>
-              </div>
-
-              {/* Cột phải: Lời chúc & Tiêu đề */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  justifyContent: "center",
-                  flex: 1,
-                  gap: "14px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "42px",
-                    fontWeight: "900",
-                    color: "#ffd166",
-                    lineHeight: 1.25,
-                    display: "flex",
-                  }}
-                >
-                  {shareTitle}
-                </div>
-
-                <div
-                  style={{
-                    fontSize: "22px",
-                    color: "#ffccd5",
-                    lineHeight: 1.45,
-                    display: "flex",
-                    maxHeight: "140px",
-                    overflow: "hidden",
-                  }}
-                >
-                  {description}
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* Layout 1 Cột khi không có ảnh */
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                textAlign: "center",
-                gap: "16px",
-                flex: 1,
-                justifyContent: "center",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "50px",
-                  fontWeight: "900",
-                  color: "#ffd166",
-                  lineHeight: 1.2,
-                  display: "flex",
-                  textAlign: "center",
-                }}
-              >
-                {shareTitle}
-              </div>
-
-              <div
-                style={{
-                  fontSize: "25px",
-                  color: "#ffb3c6",
-                  lineHeight: 1.4,
-                  display: "flex",
-                  textAlign: "center",
-                  maxWidth: "920px",
-                }}
-              >
-                {description}
-              </div>
-            </div>
-          )}
-
-          {/* Bottom Bar */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              width: "100%",
-              borderTop: "2px solid #3d145a",
-              paddingTop: "14px",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                color: "#f8f9fa",
-                fontSize: "20px",
-                fontWeight: "bold",
-              }}
-            >
-              ✨ Viết lời chúc bí mật & gửi phong bì yêu thương
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                color: "#ff758f",
-                fontSize: "18px",
-                fontWeight: "bold",
-              }}
-            >
-              👉 Nhấn vào để mở thiệp ngay
-            </div>
-          </div>
-        </div>
+        ) : null}
       </div>
     ),
     {
