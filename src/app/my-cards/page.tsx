@@ -21,6 +21,8 @@ interface CardItem {
   creatorToken?: string;
   celebrationEffect?: CelebrationEffectKey;
   description?: string;
+  imageUrl?: string;
+  imageUrls?: string[];
   shareTitle?: string;
   shareDescription?: string;
 }
@@ -219,6 +221,8 @@ export default function MyCardsPage() {
             theme: editingCard.theme,
             celebrationEffect: editingCard.celebrationEffect,
             description: editingCard.description,
+            imageUrl: editingCard.imageUrl,
+            imageUrls: editingCard.imageUrls,
             shareTitle: editingCard.shareTitle,
             shareDescription: editingCard.shareDescription,
           }}

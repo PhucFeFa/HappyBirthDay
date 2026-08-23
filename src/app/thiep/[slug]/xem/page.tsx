@@ -451,6 +451,8 @@ function CountdownScreen({
             theme: status.theme,
             celebrationEffect: status.celebrationEffect,
             description: status.description,
+            imageUrl: status.imageUrl,
+            imageUrls: status.imageUrls,
           }}
           isOpen={isEditing}
           onClose={() => setIsEditing(false)}

@@ -30,6 +30,8 @@ export async function GET(
       viewLink: `${baseUrl}/thiep/${c.slug}/xem?key=${c.creatorToken}`,
       celebrationEffect: c.celebrationEffect,
       description: c.description || null,
+      imageUrl: c.imageUrl || null,
+      imageUrls: c.imageUrls || (c.imageUrl ? [c.imageUrl] : null),
       shareTitle: c.shareTitle || null,
       shareDescription: c.shareDescription || null,
     }));
