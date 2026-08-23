@@ -86,17 +86,16 @@ const MiniEnvelopeCard = memo(function MiniEnvelopeCard({
             : "0 6px 16px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.15)",
         }}
       >
-        {/* If opened: The Letter Paper is Peeking Out from inside the envelope! */}
+        {/* If opened: Tờ giấy thư nhô lên gọn gàng, tinh tế không bị tràn chữ */}
         {isOpened && (
           <div
-            className="absolute left-2 right-2 -top-3 sm:-top-3.5 h-8 sm:h-10 rounded-t-md sm:rounded-t-lg bg-[#fffdf0] border-t border-x border-black/10 px-1.5 pt-1 shadow-sm overflow-hidden z-0"
+            className="absolute left-2.5 right-2.5 -top-2 sm:-top-2.5 h-6 sm:h-8 rounded-t-md bg-[#fffdf0] border-t border-x border-black/15 shadow-xs overflow-hidden z-0"
             style={{
-              backgroundImage: "repeating-linear-gradient(transparent, transparent 8px, #e8e0c8 8px, #e8e0c8 9px)",
+              backgroundImage: "repeating-linear-gradient(transparent, transparent 6px, #e8e0c8 6px, #e8e0c8 7.5px)",
             }}
           >
-            <p className="font-note text-[8px] sm:text-[10px] text-gray-700 truncate leading-tight italic">
-              {wish.message}
-            </p>
+            {/* Vạch kẻ trang trí đầu thư */}
+            <div className="w-8 sm:w-10 h-1 bg-pink-300/40 rounded-full mx-auto mt-1" />
           </div>
         )}
 
@@ -114,7 +113,7 @@ const MiniEnvelopeCard = memo(function MiniEnvelopeCard({
           {/* Flap: Open (Upwards) or Closed (Downwards) */}
           {isOpened ? (
             /* Open Flap turned upward */
-            <path d="M0,0 L104,-28 L208,0 Z" fill={pal.flap} opacity="0.9" />
+            <path d="M0,0 L104,-20 L208,0 Z" fill={pal.flap} opacity="0.9" />
           ) : (
             /* Closed Flap pointing down */
             <path d="M0,0 L104,58 L208,0 Z" fill={pal.flap} opacity="0.95" />
@@ -138,7 +137,7 @@ const MiniEnvelopeCard = memo(function MiniEnvelopeCard({
           </div>
         ) : (
           /* Opened Badge */
-          <div className="absolute bottom-1 right-1 sm:bottom-1.5 sm:right-1.5 px-1 py-0.5 rounded bg-black/25 text-white text-[8px] sm:text-[9px] font-medium tracking-wide z-20">
+          <div className="absolute bottom-1 right-1 sm:bottom-1.5 sm:right-1.5 px-1.5 py-0.5 rounded bg-black/35 text-white text-[8px] sm:text-[9px] font-semibold tracking-wide z-20 backdrop-blur-xs">
             ✓ Đã đọc
           </div>
         )}
