@@ -1,31 +1,52 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import StarField from "@/components/StarField";
-import { formatRevealTime, THEMES, ThemeKey } from "@/lib/utils";
+import EditCardModal from "@/components/EditCardModal";
+import { formatRevealTime, THEMES, ThemeKey, CelebrationEffectKey } from "@/lib/utils";
 
-interface UserCard {
+interface CardItem {
   id: string;
   slug: string;
   recipientName: string;
   revealAt: string;
   theme: ThemeKey;
   wishCount: number;
-  createdAt: string;
   isRevealed: boolean;
   shareLink: string;
   viewLink: string;
+  creatorToken?: string;
+  celebrationEffect?: CelebrationEffectKey;
+  description?: string;
+  shareTitle?: string;
+  shareDescription?: string;
 }
 
 export default function MyCardsPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const [cards, setCards] = useState<UserCard[]>([]);
+  const [cards, setCards] = useState<CardItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [editingCard, setEditingCard] = useState<CardItem | null>(null);
+
+  const fetchCards = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/cards/user/${user.uid}`);
+      const data = await res.json();
+      if (data.cards) {
+        setCards(data.cards);
+      }
+    } catch (err) {
+      console.error("Error fetching user cards:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -34,17 +55,9 @@ export default function MyCardsPage() {
     }
 
     if (user) {
-      fetch(`/api/cards/user/${user.uid}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.cards) {
-            setCards(data.cards);
-          }
-        })
-        .catch((err) => console.error("Error fetching user cards:", err))
-        .finally(() => setLoading(false));
+      fetchCards();
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, fetchCards]);
 
   const handleCopyLink = async (cardId: string, link: string) => {
     await navigator.clipboard.writeText(link);
@@ -168,6 +181,17 @@ export default function MyCardsPage() {
                       {card.isRevealed ? "Xem thiệp & Lời chúc" : "Xem màn hình đếm ngược"}
                     </Link>
 
+                    {/* Nút sửa thiệp trước khi mở */}
+                    {!card.isRevealed && (
+                      <button
+                        type="button"
+                        onClick={() => setEditingCard(card)}
+                        className="w-full py-2 px-4 rounded-xl text-xs font-semibold text-pink-300 hover:text-pink-200 bg-pink-500/15 hover:bg-pink-500/25 border border-pink-500/30 transition cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <span>✏️</span> Chỉnh sửa thông tin thiệp
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => handleCopyLink(card.id, card.shareLink)}
@@ -182,6 +206,27 @@ export default function MyCardsPage() {
           </div>
         )}
       </div>
+
+      {/* Modal Chỉnh Sửa Thiệp */}
+      {editingCard && (
+        <EditCardModal
+          slug={editingCard.slug}
+          creatorToken={editingCard.creatorToken}
+          userId={user?.uid}
+          initialData={{
+            recipientName: editingCard.recipientName,
+            revealAt: new Date(editingCard.revealAt).getTime(),
+            theme: editingCard.theme,
+            celebrationEffect: editingCard.celebrationEffect,
+            description: editingCard.description,
+            shareTitle: editingCard.shareTitle,
+            shareDescription: editingCard.shareDescription,
+          }}
+          isOpen={Boolean(editingCard)}
+          onClose={() => setEditingCard(null)}
+          onSuccess={fetchCards}
+        />
+      )}
     </main>
   );
 }

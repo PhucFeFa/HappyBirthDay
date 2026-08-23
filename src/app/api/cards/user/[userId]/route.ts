@@ -19,6 +19,7 @@ export async function GET(
     const result = cards.map((c) => ({
       id: c.id,
       slug: c.slug,
+      creatorToken: c.creatorToken,
       recipientName: c.recipientName,
       revealAt: c.revealAt.toISOString(),
       theme: c.theme,
@@ -27,6 +28,10 @@ export async function GET(
       isRevealed: now >= c.revealAt.getTime(),
       shareLink: `${baseUrl}/thiep/${c.slug}`,
       viewLink: `${baseUrl}/thiep/${c.slug}/xem?key=${c.creatorToken}`,
+      celebrationEffect: c.celebrationEffect,
+      description: c.description || null,
+      shareTitle: c.shareTitle || null,
+      shareDescription: c.shareDescription || null,
     }));
 
     return NextResponse.json({ success: true, cards: result });

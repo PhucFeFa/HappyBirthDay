@@ -45,41 +45,14 @@ export default async function Image({
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          background: "linear-gradient(135deg, #180026 0%, #050508 50%, #29081e 100%)",
-          color: "white",
+          justifyContent: "space-between",
+          backgroundColor: "#0d0217",
+          color: "#ffffff",
           fontFamily: "sans-serif",
-          padding: "50px 70px",
-          position: "relative",
+          padding: "45px 55px",
         }}
       >
-        {/* Glow Circles */}
-        <div
-          style={{
-            position: "absolute",
-            top: "-100px",
-            left: "-100px",
-            width: "400px",
-            height: "400px",
-            borderRadius: "50%",
-            background: "rgba(247, 37, 133, 0.3)",
-            filter: "blur(90px)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: "-100px",
-            right: "-100px",
-            width: "450px",
-            height: "450px",
-            borderRadius: "50%",
-            background: "rgba(114, 9, 183, 0.3)",
-            filter: "blur(90px)",
-          }}
-        />
-
-        {/* Card Box Frame */}
+        {/* Outer Frame Box */}
         <div
           style={{
             width: "100%",
@@ -88,58 +61,48 @@ export default async function Image({
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "space-between",
-            border: "2px solid rgba(255, 255, 255, 0.15)",
-            borderRadius: "28px",
-            padding: "45px 50px",
-            background: "rgba(255, 255, 255, 0.04)",
-            boxShadow: "0 25px 50px rgba(0, 0, 0, 0.5)",
+            backgroundColor: "#1f0633",
+            border: "4px solid #ffd166",
+            borderRadius: "32px",
+            padding: "40px 50px",
           }}
         >
-          {/* Header Tag */}
+          {/* Top Header Badge */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "12px",
-              background: "rgba(255, 255, 255, 0.1)",
-              padding: "10px 24px",
+              justifyContent: "center",
+              backgroundColor: "#ffd166",
+              color: "#1f0633",
+              padding: "10px 32px",
               borderRadius: "50px",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
+              fontSize: "22px",
+              fontWeight: "bold",
+              letterSpacing: "1px",
             }}
           >
-            <span style={{ fontSize: "24px" }}>🎁</span>
-            <span
-              style={{
-                fontSize: "20px",
-                fontWeight: 600,
-                color: "#ffd166",
-                letterSpacing: "1px",
-                textTransform: "uppercase",
-              }}
-            >
-              Món Quà Sinh Nhật Dành Cho {recipientName}
-            </span>
+            🎁 MÓN QUÀ SINH NHẬT DÀNH CHO {recipientName.toUpperCase()} 🎁
           </div>
 
-          {/* Main Title Content */}
+          {/* Main Title & Message */}
           <div
             style={{
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               textAlign: "center",
-              gap: "16px",
-              maxWidth: "950px",
+              gap: "18px",
             }}
           >
             <div
               style={{
                 fontSize: "52px",
-                fontWeight: 800,
-                lineHeight: 1.25,
-                background: "linear-gradient(90deg, #ffd166, #ff758f, #f72585, #c77dff)",
-                backgroundClip: "text",
-                color: "transparent",
+                fontWeight: "900",
+                color: "#ff758f",
+                lineHeight: 1.2,
+                display: "flex",
+                textAlign: "center",
               }}
             >
               {title}
@@ -147,45 +110,51 @@ export default async function Image({
 
             <div
               style={{
-                fontSize: "24px",
-                color: "rgba(255, 255, 255, 0.8)",
+                fontSize: "26px",
+                color: "#f8f9fa",
                 lineHeight: 1.4,
+                display: "flex",
+                textAlign: "center",
+                maxWidth: "920px",
               }}
             >
               {description}
             </div>
           </div>
 
-          {/* Footer */}
+          {/* Bottom Bar */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
               width: "100%",
-              borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+              borderTop: "2px solid #3d145a",
               paddingTop: "20px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontSize: "20px" }}>💌</span>
-              <span style={{ fontSize: "18px", color: "rgba(255, 255, 255, 0.6)" }}>
-                Khui phong bì & thổi nến sinh nhật
-              </span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                color: "#ffd166",
+                fontSize: "22px",
+                fontWeight: "bold",
+              }}
+            >
+              💌 Khui phong bì & thổi nến sinh nhật
             </div>
 
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                background: "rgba(255, 209, 102, 0.2)",
-                padding: "8px 20px",
-                borderRadius: "12px",
-                border: "1px solid rgba(255, 209, 102, 0.4)",
-                color: "#ffd166",
-                fontWeight: 700,
-                fontSize: "18px",
-                fontFamily: "monospace",
+                backgroundColor: "#ffd166",
+                color: "#0d0217",
+                padding: "8px 24px",
+                borderRadius: "16px",
+                fontSize: "22px",
+                fontWeight: "bold",
               }}
             >
               /thiep/{slug}/xem

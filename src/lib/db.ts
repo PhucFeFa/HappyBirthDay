@@ -7,6 +7,7 @@ import {
   where,
   Timestamp,
   updateDoc,
+  deleteDoc,
   increment,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -162,6 +163,30 @@ export async function getCardsByUserId(userId: string): Promise<Card[]> {
   // Sort by createdAt descending (mới nhất lên đầu)
   list.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   return list;
+}
+
+export async function updateCard(
+  cardId: string,
+  updates: Partial<Omit<Card, "id" | "slug" | "creatorToken" | "createdAt" | "wishCount">>
+): Promise<void> {
+  const docRef = doc(db, "cards", cardId);
+  const payload: Record<string, unknown> = {};
+
+  if (updates.recipientName !== undefined) payload.recipientName = updates.recipientName.trim();
+  if (updates.revealAt !== undefined) payload.revealAt = Timestamp.fromDate(updates.revealAt);
+  if (updates.theme !== undefined) payload.theme = updates.theme;
+  if (updates.description !== undefined) payload.description = updates.description.trim() || null;
+  if (updates.imageUrl !== undefined) payload.imageUrl = updates.imageUrl || null;
+  if (updates.imageUrls !== undefined) payload.imageUrls = updates.imageUrls.length > 0 ? updates.imageUrls : null;
+  if (updates.celebrationEffect !== undefined) payload.celebrationEffect = updates.celebrationEffect;
+  if (updates.shareTitle !== undefined) payload.shareTitle = updates.shareTitle.trim() || null;
+  if (updates.shareDescription !== undefined) payload.shareDescription = updates.shareDescription.trim() || null;
+
+  await updateDoc(docRef, payload);
+}
+
+export async function deleteCard(cardId: string): Promise<void> {
+  await deleteDoc(doc(db, "cards", cardId));
 }
 
 // ─── Wishes ──────────────────────────────────────────────────────────────────

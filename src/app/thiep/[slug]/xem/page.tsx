@@ -12,6 +12,7 @@ import CelebrationEffect from "@/components/CelebrationEffect";
 import StarField from "@/components/StarField";
 import Envelope from "@/components/Envelope";
 import PolaroidStack from "@/components/PolaroidStack";
+import EditCardModal from "@/components/EditCardModal";
 import { useAuth } from "@/lib/auth-context";
 
 interface StatusData {
@@ -359,8 +360,24 @@ function WishRevealModal({
 }
 
 // ─── Countdown Screen ─────────────────────────────────────────────────────────
-function CountdownScreen({ status, onReveal }: { status: StatusData; onReveal: () => void }) {
+function CountdownScreen({
+  status,
+  slug,
+  keyParam,
+  userIdParam,
+  onReveal,
+  onRefresh,
+}: {
+  status: StatusData;
+  slug: string;
+  keyParam?: string | null;
+  userIdParam?: string | null;
+  onReveal: () => void;
+  onRefresh: () => void;
+}) {
   const t = THEMES[status.theme];
+  const [isEditing, setIsEditing] = useState(false);
+
   return (
     <main
       className="min-h-[calc(100vh-4rem)] relative flex items-center justify-center p-4"
@@ -392,21 +409,54 @@ function CountdownScreen({ status, onReveal }: { status: StatusData; onReveal: (
           <p className="text-white/60 mb-1 text-sm sm:text-base">
             Dành cho <span className="font-semibold text-white" style={{ color: t.primary }}>{status.recipientName}</span>
           </p>
-          <p className="text-white/40 text-xs sm:text-sm mb-8">
+          <p className="text-white/40 text-xs sm:text-sm mb-6">
             Thời điểm mở: {formatRevealTime(new Date(status.revealAt))} (Giờ VN)
           </p>
-          <div className="mb-8">
+          <div className="mb-6">
             <CountdownTimer revealAt={status.revealAt} serverTime={status.serverTime} onReveal={onReveal} />
           </div>
-          {status.wishCount > 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="glass-card px-6 py-2.5 inline-block">
-              <p className="text-white/70 text-xs sm:text-sm">
-                📮 Đã có <span className="text-white font-bold">{status.wishCount}</span> phong bì lời chúc đang chờ bạn mở
-              </p>
-            </motion.div>
-          )}
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            {status.wishCount > 0 && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="glass-card px-5 py-2.5 inline-block">
+                <p className="text-white/70 text-xs sm:text-sm">
+                  📮 Đã có <span className="text-white font-bold">{status.wishCount}</span> phong bì lời chúc
+                </p>
+              </motion.div>
+            )}
+
+            {/* Nút chỉnh sửa thiệp dành cho người tạo trước khi mở */}
+            {status.isCreator && (
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs sm:text-sm font-semibold flex items-center gap-2 transition cursor-pointer shadow-md backdrop-blur-xs"
+              >
+                <span>✏️</span> Chỉnh sửa thông tin thiệp
+              </button>
+            )}
+          </div>
         </motion.div>
       </div>
+
+      {/* Modal Chỉnh Sửa Thiệp */}
+      {isEditing && (
+        <EditCardModal
+          slug={slug}
+          creatorToken={keyParam}
+          userId={userIdParam}
+          initialData={{
+            recipientName: status.recipientName,
+            revealAt: status.revealAt,
+            theme: status.theme,
+            celebrationEffect: status.celebrationEffect,
+            description: status.description,
+          }}
+          isOpen={isEditing}
+          onClose={() => setIsEditing(false)}
+          onSuccess={onRefresh}
+        />
+      )}
     </main>
   );
 }
@@ -656,7 +706,24 @@ function ViewPage() {
     </main>
   );
 
-  if (phase === "countdown") return <CountdownScreen status={status} onReveal={() => { setPhase("revealed"); fetchWishes(); }} />;
+  if (phase === "countdown")
+    return (
+      <CountdownScreen
+        status={status}
+        slug={slug}
+        keyParam={creatorKey}
+        userIdParam={user?.uid}
+        onReveal={() => {
+          setPhase("revealed");
+          fetchWishes();
+        }}
+        onRefresh={() => {
+          fetchStatus().then((data) => {
+            if (data) setStatus(data);
+          });
+        }}
+      />
+    );
 
   if (!hasOpenedEnvelope) {
     const t = THEMES[status.theme];

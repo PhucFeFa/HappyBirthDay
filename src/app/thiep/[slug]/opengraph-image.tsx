@@ -17,7 +17,7 @@ export default async function Image({
   const { slug } = await params;
   let recipientName = "Người ấy";
   let shareTitle = "💌 Gửi lời chúc sinh nhật! 🎂";
-  let description = "Cùng viết những lời chúc yêu thương bí mật...";
+  let description = "Cùng viết những lời chúc yêu thương bí mật dành tặng trong ngày sinh nhật nhé! 🎉";
 
   try {
     const card = await getCardBySlug(slug);
@@ -47,41 +47,14 @@ export default async function Image({
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          background: "linear-gradient(135deg, #1e0523 0%, #0d001a 50%, #2b082d 100%)",
-          color: "white",
+          justifyContent: "space-between",
+          backgroundColor: "#160322",
+          color: "#ffffff",
           fontFamily: "sans-serif",
-          padding: "50px 70px",
-          position: "relative",
+          padding: "45px 55px",
         }}
       >
-        {/* Glow Circles */}
-        <div
-          style={{
-            position: "absolute",
-            top: "-100px",
-            left: "-100px",
-            width: "400px",
-            height: "400px",
-            borderRadius: "50%",
-            background: "rgba(255, 77, 109, 0.25)",
-            filter: "blur(90px)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: "-100px",
-            right: "-100px",
-            width: "450px",
-            height: "450px",
-            borderRadius: "50%",
-            background: "rgba(168, 85, 247, 0.25)",
-            filter: "blur(90px)",
-          }}
-        />
-
-        {/* Card Box Frame */}
+        {/* Outer Frame Box */}
         <div
           style={{
             width: "100%",
@@ -90,59 +63,48 @@ export default async function Image({
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "space-between",
-            border: "2px solid rgba(255, 255, 255, 0.15)",
-            borderRadius: "28px",
-            padding: "45px 50px",
-            background: "rgba(255, 255, 255, 0.04)",
-            boxShadow: "0 25px 50px rgba(0, 0, 0, 0.5)",
+            backgroundColor: "#240a36",
+            border: "4px solid #ff4d6d",
+            borderRadius: "32px",
+            padding: "40px 50px",
           }}
         >
-          {/* Header Tag */}
+          {/* Top Header Badge */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "12px",
-              background: "rgba(255, 255, 255, 0.1)",
-              padding: "10px 24px",
+              justifyContent: "center",
+              backgroundColor: "#ff4d6d",
+              color: "#ffffff",
+              padding: "10px 32px",
               borderRadius: "50px",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
+              fontSize: "22px",
+              fontWeight: "bold",
+              letterSpacing: "1px",
             }}
           >
-            <span style={{ fontSize: "24px" }}>🎂</span>
-            <span
-              style={{
-                fontSize: "20px",
-                fontWeight: 600,
-                color: "#ffb3c6",
-                letterSpacing: "1px",
-                textTransform: "uppercase",
-              }}
-            >
-              Thiệp Sinh Nhật Bí Mật
-            </span>
+            🎂 THIỆP SINH NHẬT BÍ MẬT 🎂
           </div>
 
-          {/* Main Title Content */}
+          {/* Main Title & Message */}
           <div
             style={{
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               textAlign: "center",
-              gap: "16px",
-              maxWidth: "950px",
+              gap: "18px",
             }}
           >
             <div
               style={{
-                fontSize: "48px",
-                fontWeight: 800,
-                lineHeight: 1.25,
-                background: "linear-gradient(90deg, #ff758f, #f72585, #c77dff, #4cc9f0)",
-                backgroundClip: "text",
-                color: "transparent",
-                textShadow: "0 4px 20px rgba(255, 117, 143, 0.3)",
+                fontSize: "52px",
+                fontWeight: "900",
+                color: "#ffd166",
+                lineHeight: 1.2,
+                display: "flex",
+                textAlign: "center",
               }}
             >
               {shareTitle}
@@ -150,47 +112,51 @@ export default async function Image({
 
             <div
               style={{
-                fontSize: "24px",
-                color: "rgba(255, 255, 255, 0.8)",
+                fontSize: "26px",
+                color: "#ffb3c6",
                 lineHeight: 1.4,
-                maxHeight: "70px",
-                overflow: "hidden",
+                display: "flex",
+                textAlign: "center",
+                maxWidth: "920px",
               }}
             >
               {description}
             </div>
           </div>
 
-          {/* Footer with slug */}
+          {/* Bottom Bar */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
               width: "100%",
-              borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+              borderTop: "2px solid #3d145a",
               paddingTop: "20px",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontSize: "20px" }}>✨</span>
-              <span style={{ fontSize: "18px", color: "rgba(255, 255, 255, 0.6)" }}>
-                Viết lời chúc & phong bì yêu thương
-              </span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                color: "#f8f9fa",
+                fontSize: "22px",
+                fontWeight: "bold",
+              }}
+            >
+              ✨ Viết lời chúc & phong bì yêu thương
             </div>
 
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                background: "rgba(255, 77, 109, 0.2)",
-                padding: "8px 20px",
-                borderRadius: "12px",
-                border: "1px solid rgba(255, 77, 109, 0.4)",
-                color: "#ff8fa3",
-                fontWeight: 700,
-                fontSize: "18px",
-                fontFamily: "monospace",
+                backgroundColor: "#ff758f",
+                color: "#160322",
+                padding: "8px 24px",
+                borderRadius: "16px",
+                fontSize: "22px",
+                fontWeight: "bold",
               }}
             >
               /thiep/{slug}
