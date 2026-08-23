@@ -38,20 +38,28 @@ export async function generateMetadata({
         ? [card.imageUrl]
         : [];
 
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://hpbd-mail.vercel.app";
+    const fullUrl = `${baseUrl}/thiep/${slug}`;
+
     return {
       title,
       description,
+      metadataBase: new URL(baseUrl),
       openGraph: {
         title,
         description,
+        url: fullUrl,
+        siteName: "HPBD • Thiệp Sinh Nhật",
+        locale: "vi_VN",
         type: "website",
-        images,
       },
       twitter: {
         card: "summary_large_image",
         title,
         description,
-        images,
+      },
+      other: {
+        "fb:app_id": "966242223397117",
       },
     };
   } catch {
