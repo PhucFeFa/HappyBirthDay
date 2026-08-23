@@ -1,0 +1,354 @@
+@import url("https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Dancing+Script:wght@500;700&family=Itim&family=Patrick+Hand&family=Quicksand:wght@400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap");
+@import "tailwindcss";
+
+/* ─── CSS Variables ─────────────────────────────────────────────────────────── */
+:root {
+  --font-body: "Quicksand", sans-serif;
+  --font-script: "Dancing Script", cursive;
+  --font-note: "Patrick Hand", "Itim", "Caveat", cursive, sans-serif;
+  --font-display: "Playfair Display", serif;
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background: #0a0a0f;
+  color: white;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Keyframes ──────────────────────────────────────────────────────────────── */
+
+/* Candle flame flicker - strictly anchored at base without drifting */
+@keyframes flicker {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  25% {
+    transform: scale(0.96, 1.04);
+    opacity: 0.92;
+  }
+  50% {
+    transform: scale(1.04, 0.96);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(0.98, 1.02);
+    opacity: 0.95;
+  }
+}
+
+.flame-flicker {
+  animation: flicker 1.8s ease-in-out infinite;
+}
+
+/* Floating particles */
+@keyframes float-up {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* Shimmer shine */
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Pulse glow */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px currentColor; }
+  50% { box-shadow: 0 0 40px currentColor, 0 0 60px currentColor; }
+}
+
+/* Cake reveal scale-in */
+@keyframes cake-scale-in {
+  0% {
+    transform: scale(0.3) translateY(40px);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.08) translateY(-5px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Stars twinkle */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Bounce in */
+@keyframes bounce-in {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.15); }
+  80% { transform: scale(0.95); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Text gradient sweep */
+@keyframes gradient-text {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Fade in up */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Typography & Utilities ─────────────────────────────────────────────────── */
+
+.font-script {
+  font-family: var(--font-script);
+  line-height: 1.35;
+  padding-bottom: 0.2em;
+  display: inline-block;
+  overflow: visible;
+}
+
+.font-note {
+  font-family: var(--font-note);
+  letter-spacing: 0.02em;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(90deg, #ff6b9d, #a855f7, #3b82f6, #ff6b9d);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-text 4s ease infinite;
+  display: inline-block;
+  padding-bottom: 0.2em;
+  line-height: 1.35;
+  overflow: visible;
+}
+
+/* Shimmer button */
+.btn-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s;
+}
+
+.btn-shimmer:hover::after {
+  left: 150%;
+}
+
+/* Glass card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.5rem;
+}
+
+/* ─── Sticky Note Styles ─────────────────────────────────────────────────────── */
+
+.sticky-note {
+  position: relative;
+  border-radius: 4px 4px 18px 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2),
+              inset 0 -2px 6px rgba(0, 0, 0, 0.05);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.sticky-note:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Washi Tape and Paper Clip styles moved to inline component styles */
+
+/* Form input */
+.form-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 0.875rem;
+  padding: 0.75rem 1rem;
+  color: white;
+  font-size: 0.9375rem;
+  transition: all 0.2s ease;
+  outline: none;
+  font-family: var(--font-body);
+}
+
+.form-input:focus {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 0 0 3px rgba(255, 107, 157, 0.15);
+}
+
+.form-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 0.5rem;
+}
+
+/* Buttons */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.75rem;
+  border-radius: 0.875rem;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: none;
+  text-decoration: none;
+  box-shadow: 0 8px 25px -5px rgba(255, 107, 157, 0.4);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -5px rgba(255, 107, 157, 0.55);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.75rem;
+  border-radius: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Link copy box */
+.link-box {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  font-family: monospace;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.7);
+  word-break: break-all;
+}
+
+/* Copy button */
+.copy-btn {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  white-space: nowrap;
+}
+
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Theme swatch button */
+.theme-swatch {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-swatch:hover {
+  transform: scale(1.15);
+}
+
+.theme-swatch-active {
+  transform: scale(1.15);
+}
+
+/* Animation utilities */
+.fade-in-up {
+  animation: fade-in-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.cake-reveal {
+  animation: cake-scale-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
