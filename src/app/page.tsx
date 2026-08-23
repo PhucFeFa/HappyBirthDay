@@ -10,7 +10,7 @@ import AmbientCakeDecorations from "@/components/AmbientCakeDecorations";
 import CustomDatePicker from "@/components/CustomDatePicker";
 import PolaroidStack from "@/components/PolaroidStack";
 import type { ThemeKey, CelebrationEffectKey } from "@/lib/utils";
-import { THEMES } from "@/lib/utils";
+import { THEMES, slugify } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 
 interface CreatedCard {
@@ -81,6 +81,7 @@ export default function HomePage() {
   const [theme, setTheme] = useState<ThemeKey>("pink");
   const [celebrationEffect, setCelebrationEffect] = useState<CelebrationEffectKey>("flowers");
   const [recipientName, setRecipientName] = useState("");
+  const [customSlug, setCustomSlug] = useState("");
   const [revealAt, setRevealAt] = useState("");
   const [description, setDescription] = useState("");
 
@@ -95,6 +96,7 @@ export default function HomePage() {
   const [fieldErrors, setFieldErrors] = useState<{
     recipientName?: string;
     revealAt?: string;
+    customSlug?: string;
   }>({});
   const [created, setCreated] = useState<CreatedCard | null>(null);
 
@@ -134,6 +136,7 @@ export default function HomePage() {
           userId: user?.uid || null,
           creatorEmail: user?.email || null,
           celebrationEffect,
+          customSlug: customSlug.trim() || undefined,
         }),
       });
 
@@ -366,6 +369,50 @@ export default function HomePage() {
                     <span>⚠</span> {fieldErrors.recipientName}
                   </p>
                 )}
+              </div>
+
+              {/* Tùy chỉnh đường dẫn liên kết */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="form-label mb-0 text-xs sm:text-sm">
+                    Tùy chỉnh link thiệp <span className="text-white/40 font-normal">(Tùy chọn)</span>
+                  </label>
+                  {recipientName.trim() && !customSlug && (
+                    <button
+                      type="button"
+                      onClick={() => setCustomSlug(slugify(recipientName))}
+                      className="text-[11px] text-pink-400 hover:text-pink-300 font-medium cursor-pointer"
+                    >
+                      ✦ Gợi ý theo tên
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center rounded-xl bg-white/5 border border-white/10 overflow-hidden focus-within:border-white/40 transition">
+                  <span className="text-white/40 text-[11px] sm:text-xs pl-3 pr-1 select-none whitespace-nowrap font-mono">
+                    /thiep/
+                  </span>
+                  <input
+                    type="text"
+                    className="w-full bg-transparent text-xs sm:text-sm py-2.5 sm:py-3 pr-3 text-white placeholder-white/30 focus:outline-none font-mono tracking-wide"
+                    placeholder="vi-du-sinh-nhat-phuong-anh"
+                    value={customSlug}
+                    onChange={(e) => setCustomSlug(slugify(e.target.value))}
+                    maxLength={45}
+                  />
+                  {customSlug && (
+                    <button
+                      type="button"
+                      onClick={() => setCustomSlug("")}
+                      className="text-white/40 hover:text-white text-xs px-2.5 py-1 cursor-pointer"
+                      title="Xóa link tùy chỉnh"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-white/40 mt-1">
+                  Đặt link đẹp dễ nhớ (ví dụ: <span className="text-white/60 font-mono">sinhnhat-linh-2026</span>). Để trống sẽ tự tạo ngẫu nhiên.
+                </p>
               </div>
 
               {/* Reveal date (Custom DatePicker auto 00:00) */}

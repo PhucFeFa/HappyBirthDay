@@ -18,6 +18,25 @@ export function generateSlug(): string {
   return slug;
 }
 
+/**
+ * Chuẩn hóa chuỗi văn bản thành slug URL an toàn và đẹp mắt
+ * Ví dụ: "Chúc Mừng Sinh Nhật Phương Anh 2026!" -> "chuc-mung-sinh-nhat-phuong-anh-2026"
+ */
+export function slugify(text: string): string {
+  return text
+    .toString()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Xóa dấu tiếng Việt
+    .replace(/[đĐ]/g, "d")
+    .replace(/[^a-z0-9\s-]/g, "") // Xóa ký tự đặc biệt
+    .trim()
+    .replace(/\s+/g, "-") // Thay khoảng trắng bằng -
+    .replace(/-+/g, "-") // Xóa nhiều dấu - liên tiếp
+    .replace(/^-+|-+$/g, "") // Xóa - ở đầu và cuối
+    .slice(0, 50); // Tối đa 50 ký tự
+}
+
 /** Tạo UUID làm creator token bí mật */
 export function generateToken(): string {
   return uuidv4();

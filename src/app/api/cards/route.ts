@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createCard } from "@/lib/db";
-import { generateSlug, generateToken, vnDateTimeToUTC } from "@/lib/utils";
+import { createCard, getCardBySlug } from "@/lib/db";
+import { generateSlug, generateToken, vnDateTimeToUTC, slugify } from "@/lib/utils";
 import type { ThemeKey, CelebrationEffectKey } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
       userId,
       creatorEmail,
       celebrationEffect,
+      customSlug,
     } = body;
 
     if (!recipientName || !revealAtStr) {
@@ -36,7 +37,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const slug = generateSlug();
+    let slug: string;
+    if (customSlug && typeof customSlug === "string" && customSlug.trim()) {
+      const normalized = slugify(customSlug);
+      if (normalized.length < 3) {
+        return NextResponse.json(
+          { error: "Đường dẫn tùy chỉnh phải có ít nhất 3 ký tự hợp lệ" },
+          { status: 400 }
+        );
+      }
+
+      // Kiểm tra xem slug này đã tồn tại chưa
+      const existing = await getCardBySlug(normalized);
+      if (existing) {
+        return NextResponse.json(
+          { error: `Đường dẫn "/thiep/${normalized}" đã có người sử dụng. Vui lòng chọn tên khác nhé!` },
+          { status: 409 }
+        );
+      }
+      slug = normalized;
+    } else {
+      slug = generateSlug();
+    }
+
     const creatorToken = generateToken();
 
     const card = await createCard({
