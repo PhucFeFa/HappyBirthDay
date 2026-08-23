@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCardBySlug } from "@/lib/db";
+import { isValidSlug } from "@/lib/security";
 
 export async function GET(
   request: NextRequest,
@@ -7,6 +8,11 @@ export async function GET(
 ) {
   try {
     const { slug } = await params;
+
+    if (!isValidSlug(slug)) {
+      return NextResponse.json({ error: "Đường dẫn không hợp lệ" }, { status: 400 });
+    }
+
     const card = await getCardBySlug(slug);
 
     if (!card) {

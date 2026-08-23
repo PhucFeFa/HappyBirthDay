@@ -1,38 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCardBySlug, addWish, getWishesByCardId } from "@/lib/db";
+import { checkRateLimit, getClientIp, sanitizeString, isValidSlug } from "@/lib/security";
 
-// Rate limiting simple: track submissions per IP in-memory
-// (For production, use Redis or Upstash)
-const submissionTracker = new Map<string, number[]>();
-const MAX_WISHES_PER_IP = 3;
-const WINDOW_MS = 60 * 60 * 1000; // 1 hour
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const submissions = submissionTracker.get(ip) ?? [];
-  const recent = submissions.filter((t) => now - t < WINDOW_MS);
-  submissionTracker.set(ip, recent);
-  if (recent.length >= MAX_WISHES_PER_IP) return false;
-  recent.push(now);
-  submissionTracker.set(ip, recent);
-  return true;
-}
-
-// POST — Gửi lời chúc
+// POST — Gửi lời chúc (Được bảo vệ chống Spam / DDoS / XSS)
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
     const { slug } = await params;
-    const ip =
-      request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-      "unknown";
 
-    if (!checkRateLimit(ip)) {
+    // 1. Kiểm tra tính hợp lệ của Slug chống NoSQL Injection
+    if (!isValidSlug(slug)) {
+      return NextResponse.json({ error: "Đường dẫn không hợp lệ" }, { status: 400 });
+    }
+
+    const ip = getClientIp(request.headers);
+
+    // 2. Rate Limiting: Tối đa 15 lời chúc / phút trên mỗi IP
+    const rateCheck = checkRateLimit(ip, `wish:${slug}`, 15, 60 * 1000);
+    if (!rateCheck.allowed) {
       return NextResponse.json(
-        { error: "Bạn đã gửi quá nhiều lời chúc. Vui lòng thử lại sau." },
-        { status: 429 }
+        { error: `Bạn đang gửi lời chúc quá nhanh. Vui lòng đợi ${rateCheck.retryAfterSeconds} giây nữa.` },
+        { status: 429, headers: { "Retry-After": String(rateCheck.retryAfterSeconds) } }
       );
     }
 
@@ -42,30 +32,26 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { authorName, message, isAnonymous } = body;
+    const { authorName: rawAuthorName, message: rawMessage, isAnonymous } = body;
 
-    if (!message?.trim()) {
+    // 3. Làm sạch & Validate input chống XSS
+    const sanitizedMessage = sanitizeString(rawMessage, 1000, true);
+    if (!sanitizedMessage) {
       return NextResponse.json(
-        { error: "Vui lòng nhập lời chúc" },
+        { error: "Vui lòng nhập nội dung lời chúc" },
         { status: 400 }
       );
     }
 
-    const finalAuthorName = isAnonymous || !authorName?.trim()
+    const rawAuthor = isAnonymous || !rawAuthorName?.trim()
       ? "Người gửi bí mật 🕶️"
-      : authorName.trim();
-
-    if (finalAuthorName.length > 100 || message.length > 1000) {
-      return NextResponse.json(
-        { error: "Tên hoặc lời chúc quá dài" },
-        { status: 400 }
-      );
-    }
+      : rawAuthorName;
+    const finalAuthorName = sanitizeString(rawAuthor, 80);
 
     const wish = await addWish({
       cardId: card.id,
       authorName: finalAuthorName,
-      message: message.trim(),
+      message: sanitizedMessage,
     });
 
     return NextResponse.json({ success: true, wishId: wish.id });
