@@ -1,10 +1,8 @@
 import { ImageResponse } from "next/og";
 import { getCardBySlug } from "@/lib/db";
-import fs from "fs";
-import path from "path";
 
 export const runtime = "nodejs";
-export const alt = "Thiệp Sinh Nhật";
+export const alt = "Thiệp Sinh Nhật Bí Mật";
 export const size = {
   width: 1200,
   height: 630,
@@ -17,31 +15,23 @@ export default async function Image({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  let heroImage = "";
+  let recipientName = "Người ấy";
+  let shareTitle = "💌 Gửi lời chúc sinh nhật! 🎂";
+  let description = "Món quà bí mật & xấp ảnh kỷ niệm đang chờ bạn mở...";
 
-  // 1. Đọc ảnh bó hoa mặc định từ public
-  try {
-    const defaultImagePath = path.join(
-      process.cwd(),
-      "public",
-      "anh-bo-hoa-hong-chuc-mung-sinh-nhat.jpg"
-    );
-    if (fs.existsSync(defaultImagePath)) {
-      const fileBuffer = fs.readFileSync(defaultImagePath);
-      heroImage = `data:image/jpeg;base64,${fileBuffer.toString("base64")}`;
-    }
-  } catch (e) {
-    console.error("Error reading default birthday flower image:", e);
-  }
-
-  // 2. Lấy ảnh tải lên của thiệp nếu có
   try {
     const card = await getCardBySlug(slug);
     if (card) {
-      if (card.imageUrls && card.imageUrls.length > 0 && card.imageUrls[0]) {
-        heroImage = card.imageUrls[0];
-      } else if (card.imageUrl) {
-        heroImage = card.imageUrl;
+      recipientName = card.recipientName || recipientName;
+      if (card.shareTitle?.trim()) {
+        shareTitle = card.shareTitle.trim();
+      } else {
+        shareTitle = `💌 Gửi lời chúc sinh nhật đến ${recipientName}! 🎂`;
+      }
+      if (card.shareDescription?.trim()) {
+        description = card.shareDescription.trim();
+      } else if (card.description?.trim()) {
+        description = card.description.trim();
       }
     }
   } catch (e) {
@@ -55,41 +45,165 @@ export default async function Image({
           width: "100%",
           height: "100%",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "#000000",
-          overflow: "hidden",
+          justifyContent: "space-between",
+          backgroundColor: "#13021f",
+          color: "#ffffff",
+          fontFamily: "sans-serif",
+          padding: "40px 50px",
         }}
       >
-        {/* 100% Chỉ hiển thị duy nhất bức ảnh tràn màn hình */}
-        {heroImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={heroImage}
-            alt="Birthday Image"
-            style={{
-              width: "1200px",
-              height: "630px",
-              objectFit: "cover",
-            }}
-          />
-        ) : (
+        {/* Khung thiệp bí mật viền dạ quang */}
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "space-between",
+            backgroundColor: "#200632",
+            border: "4px solid #ff4d6d",
+            borderRadius: "32px",
+            padding: "36px 45px",
+          }}
+        >
+          {/* Header Badge */}
           <div
             style={{
-              width: "100%",
-              height: "100%",
-              backgroundColor: "#220834",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              fontSize: "48px",
-              color: "#ffd166",
-              fontWeight: "bold",
+              justifyContent: "space-between",
+              width: "100%",
             }}
           >
-            🎂 Happy Birthday! 🎂
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                backgroundColor: "#ff4d6d",
+                color: "#ffffff",
+                padding: "8px 24px",
+                borderRadius: "50px",
+                fontSize: "20px",
+                fontWeight: "bold",
+                letterSpacing: "1px",
+              }}
+            >
+              🎂 THIỆP SINH NHẬT BÍ MẬT 🎂
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                backgroundColor: "#360e4e",
+                color: "#ffd166",
+                padding: "8px 22px",
+                borderRadius: "14px",
+                fontSize: "18px",
+                fontWeight: "bold",
+                border: "1px solid #ff4d6d",
+              }}
+            >
+              /thiep/{slug}
+            </div>
           </div>
-        )}
+
+          {/* Nội dung trung tâm: Giữ bí mật, kích thích tò mò */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              textAlign: "center",
+              gap: "18px",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "52px",
+                fontWeight: "900",
+                color: "#ffd166",
+                lineHeight: 1.25,
+                display: "flex",
+                textAlign: "center",
+              }}
+            >
+              {shareTitle}
+            </div>
+
+            <div
+              style={{
+                fontSize: "26px",
+                color: "#ffccd5",
+                lineHeight: 1.45,
+                display: "flex",
+                textAlign: "center",
+                maxWidth: "920px",
+              }}
+            >
+              {description}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                backgroundColor: "rgba(255, 255, 255, 0.08)",
+                padding: "10px 28px",
+                borderRadius: "20px",
+                border: "1px dashed rgba(255, 255, 255, 0.3)",
+                color: "#ff8fa3",
+                fontSize: "22px",
+                fontWeight: "bold",
+              }}
+            >
+              🔒 Ảnh kỷ niệm & lời chúc được bảo mật bí mật bên trong
+            </div>
+          </div>
+
+          {/* Bottom Bar: Kêu gọi hành động */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%",
+              borderTop: "2px solid #3d145a",
+              paddingTop: "18px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                color: "#f8f9fa",
+                fontSize: "22px",
+                fontWeight: "bold",
+              }}
+            >
+              ✨ Gửi phong bì thư & cùng đếm ngược
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                backgroundColor: "#ffd166",
+                color: "#13021f",
+                padding: "10px 26px",
+                borderRadius: "16px",
+                fontSize: "20px",
+                fontWeight: "bold",
+              }}
+            >
+              👉 Nhấn vào để mở thiệp & xem ảnh 📸
+            </div>
+          </div>
+        </div>
       </div>
     ),
     {
