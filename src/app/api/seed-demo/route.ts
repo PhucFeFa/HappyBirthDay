@@ -28,9 +28,10 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const count = parseInt(searchParams.get("count") || "100", 10);
+    const requestedSlug = searchParams.get("slug");
     const totalWishes = Math.min(100, Math.max(5, count)); // Mặc định 100 thư
 
-    const slug = "demo-" + generateSlug();
+    const slug = requestedSlug?.trim() ? requestedSlug.trim() : "demo-" + generateSlug();
     const creatorToken = generateToken();
 
     // Reveal date in the past so it is revealed immediately
@@ -53,6 +54,8 @@ export async function GET(request: Request) {
       imageUrl: SAMPLE_IMAGES[0],
       imageUrls: SAMPLE_IMAGES,
       celebrationEffect: "flowers",
+      shareTitle: "💌 Sinh nhật 20 tuổi của Phương Anh 💖",
+      shareDescription: "Cùng viết những lời chúc yêu thương bí mật dành tặng Phương Anh trong ngày sinh nhật nhé! 🎉🎂",
     });
 
     // Tạo danh sách 100 lời chúc
