@@ -366,3 +366,42 @@ body {
 .cake-reveal {
   animation: cake-scale-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
+
+/* ─── Custom Premium Scrollbar (Loại bỏ thanh cuộn trắng thô của Windows) ──── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(10, 10, 15, 0.85);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #ff758f 0%, #f72585 50%, #7209b7 100%);
+  border-radius: 9999px;
+  border: 2px solid rgba(10, 10, 15, 0.8);
+  transition: all 0.25s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #ff8fa3 0%, #ff4d6d 50%, #b5179e 100%);
+  box-shadow: 0 0 14px rgba(255, 117, 143, 0.8);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Firefox Custom Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #ff758f rgba(10, 10, 15, 0.85);
+}
+
