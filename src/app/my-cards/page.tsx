@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import StarField from "@/components/StarField";
 import EditCardModal from "@/components/EditCardModal";
 import { formatRevealTime, THEMES, ThemeKey, CelebrationEffectKey } from "@/lib/utils";
+import { copyTextToClipboard, getInviteMessage } from "@/lib/clipboard";
 
 interface CardItem {
   id: string;
@@ -194,12 +195,24 @@ export default function MyCardsPage() {
                       </button>
                     )}
 
+                    {/* Nút sao chép lời mời bạn bè đầy đủ */}
                     <button
                       type="button"
-                      onClick={() => handleCopyLink(card.id, card.shareLink)}
-                      className="w-full py-2 px-4 rounded-xl text-xs font-medium text-white/80 bg-white/10 hover:bg-white/15 border border-white/15 transition cursor-pointer"
+                      onClick={async () => {
+                        const inviteMsg = getInviteMessage({
+                          recipientName: card.recipientName,
+                          shareLink: card.shareLink,
+                          shareTitle: card.shareTitle,
+                        });
+                        const ok = await copyTextToClipboard(inviteMsg);
+                        if (ok) {
+                          setCopiedId(card.id);
+                          setTimeout(() => setCopiedId(null), 2000);
+                        }
+                      }}
+                      className="w-full py-2 px-4 rounded-xl text-xs font-semibold text-white/90 bg-white/10 hover:bg-white/20 border border-white/20 transition cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      {copiedId === card.id ? "Đã sao chép link viết lời chúc" : "Sao chép link viết lời chúc"}
+                      <span>{copiedId === card.id ? "✓ Đã sao chép lời mời" : "📋 Sao chép tin nhắn mời bạn bè"}</span>
                     </button>
                   </div>
                 </div>

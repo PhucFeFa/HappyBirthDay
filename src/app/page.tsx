@@ -13,19 +13,24 @@ import type { ThemeKey, CelebrationEffectKey } from "@/lib/utils";
 import { THEMES, slugify } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 
+import { copyTextToClipboard, getInviteMessage, shareLinkOrCopy } from "@/lib/clipboard";
+
 interface CreatedCard {
   shareLink: string;
   creatorLink: string;
   recipientName: string;
+  shareTitle?: string;
 }
 
 function CopyButton({ text, label }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    const success = await copyTextToClipboard(text);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   return (
@@ -282,17 +287,46 @@ export default function HomePage() {
               </div>
 
               {/* Nút copy tin nhắn mời bạn bè đầy đủ link và lời nhắn */}
-              <button
-                type="button"
-                onClick={() => {
-                  const inviteMsg = `💌 Cùng gửi những phong bì lời chúc bí mật dành tặng ${created.recipientName} trong ngày sinh nhật nhé! 🎉🎂\n👉 Vào viết thiệp tại đây nè: ${created.shareLink}`;
-                  navigator.clipboard.writeText(inviteMsg);
-                  alert("Đã sao chép lời mời kèm đường link đầy đủ! Bạn có thể dán ngay vào Messenger/Zalo để gửi cho bạn bè.");
-                }}
-                className="w-full py-2.5 px-3 rounded-xl bg-pink-500/20 hover:bg-pink-500/30 border border-pink-500/40 text-pink-200 text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
-              >
-                <span>📋</span> Sao chép tin nhắn mời bạn bè (Có kèm link đầy đủ)
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const inviteMsg = getInviteMessage({
+                      recipientName: created.recipientName,
+                      shareLink: created.shareLink,
+                      shareTitle: created.shareTitle,
+                    });
+                    const ok = await copyTextToClipboard(inviteMsg);
+                    if (ok) {
+                      alert(`✓ ĐÃ SAO CHÉP LỜI MỜI KÈM LINK!\n\nNội dung đã sao chép:\n"${inviteMsg}"\n\n👉 Bạn hãy dán (Paste) vào Messenger, Zalo hoặc Instagram để gửi cho bạn bè nhé!`);
+                    } else {
+                      alert("Vui lòng sao chép thủ công đường link bên trên.");
+                    }
+                  }}
+                  className="flex-1 py-2.5 px-3 rounded-xl bg-pink-500/25 hover:bg-pink-500/35 border border-pink-500/50 text-pink-200 text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shadow-sm"
+                >
+                  <span>📋</span> Sao chép tin nhắn mời bạn bè (Có link đầy đủ)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const inviteMsg = getInviteMessage({
+                      recipientName: created.recipientName,
+                      shareLink: created.shareLink,
+                      shareTitle: created.shareTitle,
+                    });
+                    await shareLinkOrCopy({
+                      title: `Thiệp sinh nhật ${created.recipientName}`,
+                      text: inviteMsg,
+                      url: created.shareLink,
+                    });
+                  }}
+                  className="py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0"
+                >
+                  <span>📲</span> Gửi Messenger/Zalo
+                </button>
+              </div>
             </div>
 
             {/* Creator link */}
