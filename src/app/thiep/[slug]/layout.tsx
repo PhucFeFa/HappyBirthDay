@@ -23,24 +23,16 @@ export async function generateMetadata({
 
     const title =
       card.shareTitle?.trim() ||
-      `💌 Gửi lời chúc sinh nhật đến ${card.recipientName}! 🎂`;
+      `Sinh nhật của ${card.recipientName}`;
 
     const description =
       card.shareDescription?.trim() ||
       (card.description
-        ? `"${card.description}" — Cùng gửi những phong bì lời chúc yêu thương dành tặng ${card.recipientName} nhé! 🎉`
-        : `Cùng viết những lời chúc yêu thương bí mật dành tặng ${card.recipientName} trong ngày sinh nhật nhé! 🎉✨`);
-
-    const images =
-      card.imageUrls && card.imageUrls.length > 0
-        ? [card.imageUrls[0]]
-        : card.imageUrl
-        ? [card.imageUrl]
-        : [];
+        ? card.description
+        : `Thiệp chúc mừng sinh nhật ${card.recipientName}`);
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://hpbd-mail.vercel.app";
     const fullUrl = `${baseUrl}/thiep/${slug}`;
-    const ogImageUrl = `${baseUrl}/thiep/${slug}/opengraph-image`;
 
     return {
       title,
@@ -53,28 +45,11 @@ export async function generateMetadata({
         siteName: "HPBD • Thiệp Sinh Nhật",
         locale: "vi_VN",
         type: "website",
-        images: [
-          {
-            url: ogImageUrl,
-            width: 1200,
-            height: 630,
-            alt: title,
-            type: "image/png",
-          },
-        ],
       },
       twitter: {
-        card: "summary_large_image",
+        card: "summary",
         title,
         description,
-        images: [ogImageUrl],
-      },
-      other: {
-        "og:image": ogImageUrl,
-        "og:image:secure_url": ogImageUrl,
-        "og:image:type": "image/png",
-        "og:image:width": "1200",
-        "og:image:height": "630",
       },
     };
   } catch {
