@@ -52,15 +52,20 @@ export function getInviteMessage({
   recipientName,
   shareLink,
   shareTitle,
+  shareDescription,
 }: {
   recipientName: string;
   shareLink: string;
   shareTitle?: string | null;
+  shareDescription?: string | null;
 }): string {
   const name = recipientName.trim() || "người ấy";
-  const title = shareTitle?.trim() || `💌 Gửi lời chúc sinh nhật bí mật đến ${name}! 🎂✨`;
+  const title = shareTitle?.trim() || `Sinh Nhật của ${name}`;
+  const desc =
+    shareDescription?.trim() ||
+    `Cùng viết những phong bì lời chúc yêu thương bí mật dành tặng ${name} nhé! 🎉🎁`;
 
-  return `${title}\nCùng viết những phong bì lời chúc yêu thương bí mật dành tặng ${name} nhé! 🎉🎁\n👉 Nhấn vào đây để viết thiệp: ${shareLink}`;
+  return `${title}\n${desc}\n👉 Nhấn vào đây để viết thiệp: ${shareLink}`;
 }
 
 /**
@@ -84,14 +89,13 @@ export async function shareLinkOrCopy({
       });
       return { shared: true, copied: false };
     } catch (e) {
-      // User cancelled share or not supported
       if ((e as Error).name !== "AbortError") {
         console.warn("navigator.share error:", e);
       }
     }
   }
 
-  const fullMsg = `${text}\n${url}`;
+  const fullMsg = text ? `${text}\n${url}` : url;
   const copied = await copyTextToClipboard(fullMsg);
   return { shared: false, copied };
 }

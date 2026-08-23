@@ -12,7 +12,7 @@ import PolaroidStack from "@/components/PolaroidStack";
 import type { ThemeKey, CelebrationEffectKey } from "@/lib/utils";
 import { THEMES, slugify } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
-import { copyTextToClipboard, shareLinkOrCopy } from "@/lib/clipboard";
+import { copyTextToClipboard, getInviteMessage, shareLinkOrCopy } from "@/lib/clipboard";
 import {
   Copy,
   Check,
@@ -317,9 +317,15 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={async () => {
-                    const ok = await copyTextToClipboard(created.shareLink);
+                    const inviteMsg = getInviteMessage({
+                      recipientName: created.recipientName,
+                      shareLink: created.shareLink,
+                      shareTitle: created.shareTitle,
+                      shareDescription: shareDescription,
+                    });
+                    const ok = await copyTextToClipboard(inviteMsg);
                     if (ok) {
-                      alert(`✓ ĐÃ SAO CHÉP ĐƯỜNG LINK THIỆP!\n\n${created.shareLink}\n\n👉 Bạn hãy dán (Paste) vào Messenger, Zalo hoặc Instagram để gửi nhé!`);
+                      alert(`✓ ĐÃ SAO CHÉP LỜI MỜI KÈM LINK!\n\nNội dung đã sao chép:\n"${inviteMsg}"\n\n👉 Bạn hãy dán (Paste) vào Messenger, Zalo hoặc Instagram để gửi cho bạn bè nhé!`);
                     } else {
                       alert("Vui lòng sao chép thủ công đường link bên trên.");
                     }
@@ -327,15 +333,21 @@ export default function HomePage() {
                   className="flex-1 py-2.5 px-3 rounded-xl bg-pink-500/25 hover:bg-pink-500/35 border border-pink-500/50 text-pink-200 text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer shadow-sm"
                 >
                   <Copy className="w-3.5 h-3.5" />
-                  <span>Sao chép đường link</span>
+                  <span>Sao chép tin nhắn mời bạn bè (Có link)</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={async () => {
+                    const inviteMsg = getInviteMessage({
+                      recipientName: created.recipientName,
+                      shareLink: created.shareLink,
+                      shareTitle: created.shareTitle,
+                      shareDescription: shareDescription,
+                    });
                     await shareLinkOrCopy({
                       title: `Thiệp sinh nhật ${created.recipientName}`,
-                      text: "",
+                      text: inviteMsg,
                       url: created.shareLink,
                     });
                   }}
