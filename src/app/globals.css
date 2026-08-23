@@ -143,6 +143,20 @@ body {
   font-family: var(--font-display);
 }
 
+/* ─── GPU & Render Optimization Utilities ──────────────────────────────────── */
+.envelope-card-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 120px 95px;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.gpu-accelerate {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
 /* Gradient text */
 .gradient-text {
   background: linear-gradient(90deg, #ff6b9d, #a855f7, #3b82f6, #ff6b9d);

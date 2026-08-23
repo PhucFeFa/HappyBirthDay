@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense, memo } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import type { ThemeKey, CelebrationEffectKey } from "@/lib/utils";
@@ -47,8 +47,8 @@ const ENVELOPE_PALETTES = [
 ];
 const ROTATIONS = [-2, 1.5, -1, 2.2, -1.8, 1.2, -1.5, 1.8];
 
-// ─── Mini Envelope Card (in gallery) ─────────────────────────────────────────
-function MiniEnvelopeCard({
+// ─── Mini Envelope Card (Optimized with React.memo & hardware acceleration) ──
+const MiniEnvelopeCard = memo(function MiniEnvelopeCard({
   wish,
   index,
   isOpened,
@@ -69,25 +69,21 @@ function MiniEnvelopeCard({
       : wish.authorName;
 
   return (
-    <motion.button
+    <button
+      type="button"
       onClick={onClick}
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -5, scale: 1.06 }}
-      whileTap={{ scale: 0.95 }}
-      transition={{ duration: 0.2 }}
-      style={{ rotate: `${rotate}deg` }}
-      className="w-full max-w-[115px] sm:max-w-[145px] md:max-w-[160px] relative cursor-pointer focus:outline-none group flex flex-col items-center select-none"
+      style={{ transform: `rotate(${rotate}deg)` }}
+      className="envelope-card-item w-full max-w-[115px] sm:max-w-[145px] md:max-w-[160px] relative cursor-pointer focus:outline-none group flex flex-col items-center select-none transform-gpu hover:-translate-y-1.5 hover:scale-105 active:scale-95 transition-transform duration-200"
       aria-label={`Mở thiệp từ ${displayName}`}
     >
       {/* Envelope Container */}
       <div
-        className="relative w-full aspect-[16/11] rounded-xl sm:rounded-2xl transition-all duration-300"
+        className="relative w-full aspect-[16/11] rounded-xl sm:rounded-2xl transition-shadow duration-200"
         style={{
           backgroundColor: pal.body,
           boxShadow: isOpened
-            ? "0 3px 10px rgba(0,0,0,0.25)"
-            : "0 8px 18px rgba(0,0,0,0.35), 0 2px 5px rgba(0,0,0,0.2)",
+            ? "0 2px 8px rgba(0,0,0,0.2)"
+            : "0 6px 16px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.15)",
         }}
       >
         {/* If opened: The Letter Paper is Peeking Out from inside the envelope! */}
@@ -132,7 +128,7 @@ function MiniEnvelopeCard({
         {/* Wax Seal Stamp (if NOT opened) */}
         {!isOpened ? (
           <div
-            className="absolute top-[48%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-white text-[9px] sm:text-xs font-bold shadow-md z-20 group-hover:scale-110 transition"
+            className="absolute top-[48%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-5 h-5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-white text-[9px] sm:text-xs font-bold shadow-md z-20 group-hover:scale-110 transition-transform duration-150"
             style={{
               background: `radial-gradient(circle, ${pal.accent}, ${pal.flap})`,
               border: "1px solid rgba(255,255,255,0.5)",
@@ -167,9 +163,9 @@ function MiniEnvelopeCard({
           {displayName}
         </span>
       </div>
-    </motion.button>
+    </button>
   );
-}
+});
 
 // ─── Wish Reveal Modal ────────────────────────────────────────────────────────
 function WishRevealModal({

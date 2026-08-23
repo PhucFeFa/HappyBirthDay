@@ -77,6 +77,7 @@ export default function PolaroidStack({ images, recipientName = "Kỷ niệm" }:
                     alt={`${recipientName} - Ảnh ${idx + 1}`}
                     className="w-full h-full object-cover"
                     loading="lazy"
+                    decoding="async"
                   />
                 </div>
 
