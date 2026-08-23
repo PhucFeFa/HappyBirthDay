@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import StarField from "@/components/StarField";
 import EditCardModal from "@/components/EditCardModal";
 import { formatRevealTime, THEMES, ThemeKey, CelebrationEffectKey } from "@/lib/utils";
-import { copyTextToClipboard, getInviteMessage } from "@/lib/clipboard";
+import { copyTextToClipboard } from "@/lib/clipboard";
 import {
   Copy,
   Check,
@@ -209,33 +209,21 @@ export default function MyCardsPage() {
                       </button>
                     )}
 
-                    {/* Nút sao chép tin nhắn mời bạn bè đầy đủ */}
+                    {/* Nút sao chép link thuần */}
                     <button
                       type="button"
-                      onClick={async () => {
-                        const inviteMsg = getInviteMessage({
-                          recipientName: card.recipientName,
-                          shareLink: card.shareLink,
-                          shareTitle: card.shareTitle,
-                          shareDescription: card.shareDescription,
-                        });
-                        const ok = await copyTextToClipboard(inviteMsg);
-                        if (ok) {
-                          setCopiedId(card.id);
-                          setTimeout(() => setCopiedId(null), 2000);
-                        }
-                      }}
+                      onClick={() => handleCopyLink(card.id, card.shareLink)}
                       className="w-full py-2 px-4 rounded-xl text-xs font-semibold text-white/90 bg-white/10 hover:bg-white/20 border border-white/20 transition cursor-pointer flex items-center justify-center gap-1.5"
                     >
                       {copiedId === card.id ? (
                         <>
                           <Check className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Đã sao chép tin nhắn mời</span>
+                          <span>Đã chép link</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3.5 h-3.5" />
-                          <span>Sao chép tin nhắn mời bạn bè</span>
+                          <span>Sao chép link gửi bạn bè</span>
                         </>
                       )}
                     </button>
