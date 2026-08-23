@@ -477,8 +477,11 @@ export default function HomePage() {
                         <span className="text-[11px] text-white/70 block line-clamp-2 mt-0.5">
                           {shareDescription.trim() || "Cùng gửi những phong bì lời chúc yêu thương bí mật trong ngày sinh nhật nhé! 🎉"}
                         </span>
-                        <span className="text-[9px] text-white/40 uppercase tracking-wider block mt-1">
-                          {typeof window !== "undefined" ? window.location.host : "hpbd-app.vercel.app"}
+                        <span className="text-[9.5px] text-pink-300/80 font-mono tracking-wider block mt-1.5 truncate">
+                          {typeof window !== "undefined" ? window.location.host : "hpbd-mail.vercel.app"}
+                          <span className="text-white/80 font-semibold">
+                            {customSlug.trim() ? `/thiep/${customSlug.trim()}` : "/thiep/ten-tuy-chinh"}
+                          </span>
                         </span>
                       </div>
                     </div>
