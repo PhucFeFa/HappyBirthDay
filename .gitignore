@@ -24,6 +24,10 @@
 .DS_Store
 *.pem
 
+# Firebase Service Account keys (never commit to git!)
+*firebase-adminsdk*.json
+*serviceAccount*.json
+
 # debug
 npm-debug.log*
 yarn-debug.log*
