@@ -3,12 +3,16 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { Sparkles, PlusCircle, Layers, LogOut, LogIn } from "lucide-react";
+import { PlusCircle, Layers, LogOut, LogIn, LayoutDashboard } from "lucide-react";
+
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? "phuclh.ce191132@gmail.com";
 
 export default function Navbar() {
   const { user, loading, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+
+  const isAdmin = !!user && user.email === ADMIN_EMAIL;
 
   const handleLogout = async () => {
     await logout();
@@ -51,6 +55,21 @@ export default function Navbar() {
             >
               <Layers className="w-3.5 h-3.5 text-purple-400" />
               <span>Thiệp của tôi</span>
+            </Link>
+          )}
+
+          {/* Admin link – only visible for admin email */}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              className={`text-xs sm:text-sm font-medium px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full whitespace-nowrap transition flex items-center gap-1.5 ${
+                pathname.startsWith("/admin")
+                  ? "bg-gradient-to-r from-pink-500/30 to-purple-500/30 text-white border border-white/20"
+                  : "text-white/70 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <LayoutDashboard className="w-3.5 h-3.5 text-pink-400" />
+              <span>Admin</span>
             </Link>
           )}
 
