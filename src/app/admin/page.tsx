@@ -6,82 +6,32 @@ import {
   LayoutDashboard, CreditCard, MessageSquare, Users,
   Search, Trash2, Eye, RefreshCw, ChevronLeft, ChevronRight,
   CheckCircle, Clock, Sparkles, X, AlertTriangle,
-  Link2, AlertCircle
+  Link2, AlertCircle, Calendar, Mail
 } from "lucide-react";
 import { THEMES } from "@/lib/utils";
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface Stats {
-  totalCards: number;
-  totalWishes: number;
-  revealedCards: number;
-  pendingCards: number;
-  cardsThisWeek: number;
-  wishesThisWeek: number;
-  themeDistribution: Record<string, number>;
-}
-
-interface AdminCard {
-  id: string;
-  slug: string;
-  recipientName: string;
-  revealAt: string;
-  createdAt: string;
-  theme: string;
-  wishCount: number;
-  userId?: string;
-  creatorEmail?: string;
-  description?: string;
-  isRevealed: boolean;
-}
-
-interface AdminWish {
-  id: string;
-  cardId: string;
-  authorName: string;
-  message: string;
-  createdAt: string;
-}
-
-interface AdminUser {
-  userId: string;
-  email: string;
-  cardCount: number;
-  latestCardAt?: string;
-}
+import {
+  AdminCard,
+  AdminWish,
+  AdminStats,
+  AdminUserSummary,
+  fetchAdminStatsDirect,
+  fetchAllCardsDirect,
+  fetchWishesForCardDirect,
+  deleteCardDirect,
+  deleteWishDirect,
+  fetchAllUsersDirect,
+} from "@/lib/admin-client-db";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function fmtDate(d: string | undefined) {
+function fmtDate(d: Date | string | undefined) {
   if (!d) return "—";
-  return new Date(d).toLocaleString("vi-VN", {
+  const dateObj = d instanceof Date ? d : new Date(d);
+  if (isNaN(dateObj.getTime()) || dateObj.getTime() === 0) return "—";
+  return dateObj.toLocaleString("vi-VN", {
     day: "2-digit", month: "2-digit", year: "numeric",
     hour: "2-digit", minute: "2-digit",
   });
-}
-
-// ─── Hook: Get admin token ────────────────────────────────────────────────────
-
-function useAdminFetch() {
-  const { user } = useAuth();
-
-  const adminFetch = useCallback(async (url: string, options?: RequestInit) => {
-    if (!user) {
-      throw new Error("Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn.");
-    }
-    const token = await user.getIdToken(true);
-    return fetch(url, {
-      ...options,
-      headers: {
-        ...options?.headers,
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-  }, [user]);
-
-  return { adminFetch, user };
 }
 
 // ─── Stat Card Component ──────────────────────────────────────────────────────
@@ -137,7 +87,7 @@ function ConfirmDialog({ message, onConfirm, onCancel }: {
 // ─── Tab: Overview ────────────────────────────────────────────────────────────
 
 function OverviewTab({ stats, loading, error, onRetry }: {
-  stats: Stats | null;
+  stats: AdminStats | null;
   loading: boolean;
   error?: string | null;
   onRetry: () => void;
@@ -153,7 +103,7 @@ function OverviewTab({ stats, loading, error, onRetry }: {
     <div className="glass-card p-8 text-center max-w-md mx-auto my-12">
       <AlertCircle className="w-12 h-12 text-rose-400 mx-auto mb-3" />
       <h3 className="text-white font-bold text-lg mb-1">Không thể tải dữ liệu</h3>
-      <p className="text-rose-300 text-xs sm:text-sm mb-4">{error || "Lỗi kết nối máy chủ Firebase"}</p>
+      <p className="text-rose-300 text-xs sm:text-sm mb-4">{error || "Lỗi truy vấn Firestore"}</p>
       <button
         onClick={onRetry}
         className="px-5 py-2.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-sm font-semibold transition cursor-pointer inline-flex items-center gap-2"
@@ -172,7 +122,7 @@ function OverviewTab({ stats, loading, error, onRetry }: {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Tổng thiệp" value={stats.totalCards} sub={`+${stats.cardsThisWeek} tuần này`} icon={CreditCard} color="#f472b6" />
         <StatCard label="Tổng lời chúc" value={stats.totalWishes} sub={`+${stats.wishesThisWeek} tuần này`} icon={MessageSquare} color="#a78bfa" />
-        <StatCard label="Đã mở" value={stats.revealedCards} sub="thiệp đã reveal" icon={CheckCircle} color="#34d399" />
+        <StatCard label="Đã mở" value={stats.revealedCards} sub="thiệp đã đến giờ" icon={CheckCircle} color="#34d399" />
         <StatCard label="Chưa mở" value={stats.pendingCards} sub="đang đếm ngược" icon={Clock} color="#fbbf24" />
       </div>
 
@@ -217,30 +167,29 @@ function OverviewTab({ stats, loading, error, onRetry }: {
 function CardDetailModal({ card, onClose, onDeleteWish }: {
   card: AdminCard;
   onClose: () => void;
-  onDeleteWish: (wishId: string) => Promise<void>;
+  onDeleteWish: (wishId: string, cardId: string) => Promise<void>;
 }) {
-  const { adminFetch } = useAdminFetch();
   const [wishes, setWishes] = useState<AdminWish[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
 
   useEffect(() => {
-    adminFetch(`/api/admin/wishes?cardId=${card.id}`)
-      .then((r) => r.json())
-      .then((d) => setWishes(d.wishes ?? []))
+    fetchWishesForCardDirect(card.id)
+      .then((data) => setWishes(data))
+      .catch((e) => console.error("Error loading wishes:", e))
       .finally(() => setLoading(false));
-  }, [card.id, adminFetch]);
+  }, [card.id]);
 
   const handleDeleteWish = async (wishId: string) => {
     setDeletingId(wishId);
-    await onDeleteWish(wishId);
+    await onDeleteWish(wishId, card.id);
     setWishes((prev) => prev.filter((w) => w.id !== wishId));
     setDeletingId(null);
     setConfirm(null);
   };
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "https://hpbd-mail.vercel.app";
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://hpbd-mail.vercel.app";
 
   return (
     <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-16 overflow-y-auto">
@@ -282,7 +231,11 @@ function CardDetailModal({ card, onClose, onDeleteWish }: {
         <div className="px-5 pt-3 pb-4 border-b border-white/10 flex gap-3 flex-wrap">
           <a href={`${baseUrl}/thiep/${card.slug}`} target="_blank" rel="noreferrer"
             className="text-xs text-pink-400 hover:text-pink-300 flex items-center gap-1 transition">
-            <Link2 className="w-3 h-3" /> Link gửi
+            <Link2 className="w-3 h-3" /> Link viết thiệp
+          </a>
+          <a href={`${baseUrl}/thiep/${card.slug}/xem`} target="_blank" rel="noreferrer"
+            className="text-xs text-purple-400 hover:text-purple-300 flex items-center gap-1 transition">
+            <Link2 className="w-3 h-3" /> Link mở thiệp
           </a>
         </div>
 
@@ -338,12 +291,9 @@ function CardDetailModal({ card, onClose, onDeleteWish }: {
 
 // ─── Tab: Cards ───────────────────────────────────────────────────────────────
 
-function CardsTab() {
-  const { adminFetch } = useAdminFetch();
-  const [cards, setCards] = useState<AdminCard[]>([]);
-  const [total, setTotal] = useState(0);
+function CardsTab({ onCardDeleted }: { onCardDeleted?: () => void }) {
+  const [allCards, setAllCards] = useState<AdminCard[]>([]);
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -352,80 +302,93 @@ function CardsTab() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const LIMIT = 15;
 
-  const fetchCards = useCallback(async () => {
+  const loadCards = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const qs = new URLSearchParams({ page: String(page), limit: String(LIMIT) });
-      if (search) qs.set("search", search);
-      const res = await adminFetch(`/api/admin/cards?${qs}`);
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Không thể tải danh sách thiệp");
-      }
-      setCards(data.cards ?? []);
-      setTotal(data.total ?? 0);
+      const data = await fetchAllCardsDirect();
+      setAllCards(data);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(e instanceof Error ? e.message : "Lỗi khi tải danh sách thiệp");
     } finally {
       setLoading(false);
     }
-  }, [adminFetch, page, search]);
+  }, []);
 
-  useEffect(() => { fetchCards(); }, [fetchCards]);
+  useEffect(() => {
+    loadCards();
+  }, [loadCards]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    setSearch(searchInput);
-  };
+  // Filter client-side
+  const filtered = allCards.filter((c) => {
+    if (!searchInput.trim()) return true;
+    const q = searchInput.toLowerCase().trim();
+    return (
+      c.recipientName.toLowerCase().includes(q) ||
+      c.slug.toLowerCase().includes(q) ||
+      (c.creatorEmail && c.creatorEmail.toLowerCase().includes(q)) ||
+      (c.description && c.description.toLowerCase().includes(q))
+    );
+  });
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / LIMIT));
+  const paginated = filtered.slice((page - 1) * LIMIT, page * LIMIT);
 
   const handleDelete = async (card: AdminCard) => {
     setDeletingId(card.id);
     try {
-      await adminFetch(`/api/admin/cards/${card.id}`, { method: "DELETE" });
-      setCards((prev) => prev.filter((c) => c.id !== card.id));
-      setTotal((t) => t - 1);
+      await deleteCardDirect(card.id);
+      setAllCards((prev) => prev.filter((c) => c.id !== card.id));
+      if (onCardDeleted) onCardDeleted();
+    } catch (e) {
+      alert("Lỗi khi xóa thiệp: " + String(e));
     } finally {
       setDeletingId(null);
       setConfirmDelete(null);
     }
   };
 
-  const handleDeleteWish = async (wishId: string) => {
-    await adminFetch(`/api/admin/wishes?id=${wishId}`, { method: "DELETE" });
+  const handleDeleteWish = async (wishId: string, cardId: string) => {
+    await deleteWishDirect(wishId, cardId);
+    setAllCards((prev) =>
+      prev.map((c) => (c.id === cardId ? { ...c, wishCount: Math.max(0, c.wishCount - 1) } : c))
+    );
   };
-
-  const totalPages = Math.max(1, Math.ceil(total / LIMIT));
 
   return (
     <div className="space-y-4">
       {/* Search */}
-      <form onSubmit={handleSearch} className="flex gap-2">
+      <div className="flex gap-2">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
           <input
             className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white text-sm placeholder:text-white/30 outline-none focus:border-pink-500/50 focus:bg-white/8 transition"
             placeholder="Tìm theo tên người nhận, slug, email..."
             value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
+            onChange={(e) => {
+              setSearchInput(e.target.value);
+              setPage(1);
+            }}
           />
         </div>
-        <button type="submit"
-          className="px-4 py-2.5 rounded-xl bg-pink-500/20 hover:bg-pink-500/30 border border-pink-500/30 text-pink-300 text-sm font-medium transition cursor-pointer">
-          Tìm
-        </button>
-        {search && (
-          <button type="button" onClick={() => { setSearch(""); setSearchInput(""); setPage(1); }}
-            className="px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 transition cursor-pointer">
+        {searchInput && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearchInput("");
+              setPage(1);
+            }}
+            className="px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/50 transition cursor-pointer"
+          >
             <X className="w-4 h-4" />
           </button>
         )}
-      </form>
+      </div>
 
       {/* Total */}
       <p className="text-white/40 text-sm">
-        {search ? `Tìm thấy ${total} thiệp` : `Tổng cộng ${total} thiệp`}
+        {searchInput ? `Tìm thấy ${total} / ${allCards.length} thiệp` : `Tổng cộng ${allCards.length} thiệp`}
       </p>
 
       {/* Table */}
@@ -437,9 +400,9 @@ function CardsTab() {
         ) : error ? (
           <div className="p-8 text-center text-rose-300 text-sm">
             <p>{error}</p>
-            <button onClick={fetchCards} className="mt-3 px-4 py-2 rounded-lg bg-pink-500/30 text-white text-xs">Thử lại</button>
+            <button onClick={loadCards} className="mt-3 px-4 py-2 rounded-lg bg-pink-500/30 text-white text-xs">Thử lại</button>
           </div>
-        ) : cards.length === 0 ? (
+        ) : paginated.length === 0 ? (
           <p className="text-white/30 text-center py-12">Không có thiệp nào.</p>
         ) : (
           <div className="overflow-x-auto">
@@ -454,18 +417,20 @@ function CardsTab() {
                 </tr>
               </thead>
               <tbody>
-                {cards.map((card) => {
+                {paginated.map((card) => {
                   const t = THEMES[card.theme as keyof typeof THEMES];
                   return (
                     <tr key={card.id} className="border-b border-white/5 hover:bg-white/3 group transition">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full shrink-0"
+                          <div className="w-2.5 h-2.5 rounded-full shrink-0"
                             style={{ background: t?.primary ?? "#f472b6" }} />
-                          <span className="text-white font-medium max-w-[130px] truncate">{card.recipientName}</span>
+                          <span className="text-white font-medium max-w-[140px] truncate">{card.recipientName}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-white/50 font-mono text-xs">{card.slug}</td>
+                      <td className="px-4 py-3 text-white/50 font-mono text-xs max-w-[110px] truncate">
+                        {card.slug}
+                      </td>
                       <td className="px-4 py-3 text-white/50 max-w-[150px] truncate">{card.creatorEmail ?? "—"}</td>
                       <td className="px-4 py-3 text-white/40 whitespace-nowrap text-xs">{fmtDate(card.createdAt)}</td>
                       <td className="px-4 py-3 text-white/40 whitespace-nowrap text-xs">{fmtDate(card.revealAt)}</td>
@@ -539,29 +504,26 @@ function CardsTab() {
 // ─── Tab: Users ───────────────────────────────────────────────────────────────
 
 function UsersTab() {
-  const { adminFetch } = useAdminFetch();
-  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [users, setUsers] = useState<AdminUserSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUsers = useCallback(async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await adminFetch("/api/admin/users");
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || "Không thể tải danh sách tài khoản");
-      setUsers(d.users ?? []);
+      const data = await fetchAllUsersDirect();
+      setUsers(data);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(e instanceof Error ? e.message : "Lỗi khi tải tài khoản");
     } finally {
       setLoading(false);
     }
-  }, [adminFetch]);
+  }, []);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    loadUsers();
+  }, [loadUsers]);
 
   if (loading) return (
     <div className="flex justify-center py-20">
@@ -572,20 +534,20 @@ function UsersTab() {
   if (error) return (
     <div className="p-8 text-center text-rose-300 text-sm glass-card">
       <p>{error}</p>
-      <button onClick={fetchUsers} className="mt-3 px-4 py-2 rounded-lg bg-pink-500/30 text-white text-xs">Thử lại</button>
+      <button onClick={loadUsers} className="mt-3 px-4 py-2 rounded-lg bg-pink-500/30 text-white text-xs">Thử lại</button>
     </div>
   );
 
   return (
     <div className="glass-card overflow-hidden">
       {users.length === 0 ? (
-        <p className="text-white/30 text-center py-12">Chưa có user nào tạo thiệp.</p>
+        <p className="text-white/30 text-center py-12">Chưa có người dùng nào tạo thiệp.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/10">
-                {["#", "Email", "Số thiệp đã tạo", "Thiệp gần nhất"].map((h) => (
+                {["#", "Email Người Tạo", "Số Thiệp Đã Tạo", "Thiệp Gần Nhất"].map((h) => (
                   <th key={h} className="text-left text-white/40 font-medium px-4 py-3 text-xs uppercase tracking-wider">
                     {h}
                   </th>
@@ -597,11 +559,11 @@ function UsersTab() {
                 <tr key={u.userId} className="border-b border-white/5 hover:bg-white/3 transition">
                   <td className="px-4 py-3 text-white/30 text-xs">{idx + 1}</td>
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
                       <div className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
                         {u.email[0].toUpperCase()}
                       </div>
-                      <span className="text-white/80 max-w-[220px] truncate">{u.email}</span>
+                      <span className="text-white/80 font-medium max-w-[240px] truncate">{u.email}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -631,40 +593,32 @@ type TabId = (typeof TABS)[number]["id"];
 
 export default function AdminPage() {
   const { user } = useAuth();
-  const { adminFetch } = useAdminFetch();
   const [activeTab, setActiveTab] = useState<TabId>("overview");
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats] = useState<AdminStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchStats = useCallback(async () => {
-    if (!user) return;
+  const loadStats = useCallback(async () => {
     setStatsLoading(true);
     setStatsError(null);
     try {
-      const res = await adminFetch("/api/admin/stats");
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Lỗi truy vấn thống kê");
-      }
+      const data = await fetchAdminStatsDirect();
       setStats(data);
     } catch (e: unknown) {
-      setStatsError(e instanceof Error ? e.message : String(e));
+      setStatsError(e instanceof Error ? e.message : "Lỗi khi lấy dữ liệu");
     } finally {
       setStatsLoading(false);
     }
-  }, [adminFetch, user]);
+  }, []);
 
   useEffect(() => {
-    if (user) {
-      fetchStats();
-    }
-  }, [user, fetchStats]);
+    loadStats();
+  }, [loadStats]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchStats();
+    await loadStats();
     setRefreshing(false);
   };
 
@@ -676,7 +630,7 @@ export default function AdminPage() {
       }}
     >
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Page Header (No duplicate topbar, clean integrated title) */}
+        {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -729,10 +683,10 @@ export default function AdminPage() {
             stats={stats}
             loading={statsLoading}
             error={statsError}
-            onRetry={fetchStats}
+            onRetry={loadStats}
           />
         )}
-        {activeTab === "cards" && <CardsTab />}
+        {activeTab === "cards" && <CardsTab onCardDeleted={loadStats} />}
         {activeTab === "users" && <UsersTab />}
       </div>
     </main>
