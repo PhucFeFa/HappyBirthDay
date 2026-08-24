@@ -11,8 +11,9 @@ export async function GET(request: NextRequest) {
   try {
     const stats = await getAdminStats();
     return NextResponse.json(stats);
-  } catch (e) {
-    console.error("Admin stats error:", e);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error("[Admin Stats API Error]:", message);
+    return NextResponse.json({ error: `Lỗi truy vấn dữ liệu: ${message}` }, { status: 500 });
   }
 }

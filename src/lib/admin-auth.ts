@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase-admin";
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "";
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || "phuclh.ce191132@gmail.com").toLowerCase().trim();
 
 export async function requireAdmin(
   request: NextRequest
@@ -13,25 +13,36 @@ export async function requireAdmin(
   const authHeader = request.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return {
-      error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      error: NextResponse.json({ error: "Chưa đăng nhập (Thiếu token xác thực)" }, { status: 401 }),
     };
   }
 
-  const token = authHeader.slice(7);
+  const token = authHeader.slice(7).trim();
+  if (!token) {
+    return {
+      error: NextResponse.json({ error: "Token xác thực rỗng" }, { status: 401 }),
+    };
+  }
+
   try {
     const adminAuth = getAdminAuth();
     const decoded = await adminAuth.verifyIdToken(token);
 
-    if (!decoded.email || decoded.email !== ADMIN_EMAIL) {
+    const userEmail = (decoded.email || "").toLowerCase().trim();
+
+    if (!userEmail || userEmail !== ADMIN_EMAIL) {
+      console.warn(`[requireAdmin] Access denied for email: ${userEmail}. Expected: ${ADMIN_EMAIL}`);
       return {
-        error: NextResponse.json({ error: "Forbidden: Not admin" }, { status: 403 }),
+        error: NextResponse.json({ error: `Tài khoản ${userEmail || "ẩn danh"} không có quyền quản trị viên.` }, { status: 403 }),
       };
     }
 
-    return { uid: decoded.uid, email: decoded.email };
-  } catch {
+    return { uid: decoded.uid, email: userEmail };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[requireAdmin] Token verification failed:", message);
     return {
-      error: NextResponse.json({ error: "Invalid or expired token" }, { status: 401 }),
+      error: NextResponse.json({ error: `Xác thực thất bại: ${message}` }, { status: 401 }),
     };
   }
 }

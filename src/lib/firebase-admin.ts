@@ -10,6 +10,16 @@ let adminApp: App;
 let adminDb: Firestore;
 let adminAuth: Auth;
 
+function getPrivateKey(): string | undefined {
+  let key = process.env.FIREBASE_ADMIN_PRIVATE_KEY;
+  if (!key) return undefined;
+  key = key.trim();
+  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+    key = key.slice(1, -1);
+  }
+  return key.replace(/\\n/g, "\n");
+}
+
 function getAdminApp(): App {
   if (adminApp) return adminApp;
 
@@ -19,12 +29,22 @@ function getAdminApp(): App {
     return adminApp;
   }
 
-  const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n");
+  const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
+  const privateKey = getPrivateKey();
+
+  if (!projectId || !clientEmail || !privateKey) {
+    console.error("[Firebase Admin] Missing credentials:", {
+      hasProjectId: Boolean(projectId),
+      hasClientEmail: Boolean(clientEmail),
+      hasPrivateKey: Boolean(privateKey),
+    });
+  }
 
   adminApp = initializeApp({
     credential: cert({
-      projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+      projectId,
+      clientEmail,
       privateKey,
     }),
   });
