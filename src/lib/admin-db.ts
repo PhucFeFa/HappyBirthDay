@@ -52,13 +52,18 @@ function toDate(val: unknown): Date {
 }
 
 function docToAdminCard(id: string, data: FirebaseFirestore.DocumentData): AdminCard {
-  const revealAt = toDate(data.revealAt);
+  // Guard against old docs missing revealAt or createdAt
+  let revealAt: Date;
+  try { revealAt = toDate(data.revealAt); } catch { revealAt = new Date(0); }
+  let createdAt: Date;
+  try { createdAt = data.createdAt ? toDate(data.createdAt) : new Date(0); } catch { createdAt = new Date(0); }
+
   return {
     id,
     slug: data.slug ?? "",
-    recipientName: data.recipientName ?? "",
+    recipientName: data.recipientName ?? "(Không rõ)",
     revealAt,
-    createdAt: toDate(data.createdAt),
+    createdAt,
     theme: (data.theme as ThemeKey) ?? "pink",
     wishCount: data.wishCount ?? 0,
     userId: data.userId,
@@ -89,9 +94,13 @@ export async function getAdminStats(): Promise<AdminStats> {
 
   cardsSnap.docs.forEach((doc) => {
     const data = doc.data();
-    const revealAt = toDate(data.revealAt);
-    if (revealAt.getTime() <= now) revealedCards++;
-    if (toDate(data.createdAt).getTime() >= oneWeekAgo) cardsThisWeek++;
+    try {
+      const revealAt = toDate(data.revealAt);
+      if (revealAt.getTime() <= now) revealedCards++;
+    } catch { /* skip malformed revealAt */ }
+    try {
+      if (data.createdAt && toDate(data.createdAt).getTime() >= oneWeekAgo) cardsThisWeek++;
+    } catch { /* skip malformed createdAt */ }
     const theme = (data.theme as string) ?? "pink";
     themeDistribution[theme] = (themeDistribution[theme] ?? 0) + 1;
   });
@@ -121,9 +130,14 @@ export async function getAllCards(options?: {
   limit?: number;
 }): Promise<{ cards: AdminCard[]; total: number }> {
   const db = getAdminDb();
-  const snap = await db.collection("cards").orderBy("createdAt", "desc").get();
+  // NOTE: Do NOT use orderBy() here — Firestore excludes documents that
+  // don't have the field being ordered by (i.e. old cards without createdAt).
+  // Sort client-side instead to get ALL documents.
+  const snap = await db.collection("cards").get();
 
   let cards = snap.docs.map((doc) => docToAdminCard(doc.id, doc.data()));
+  // Sort newest first client-side
+  cards.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   // Client-side filtering (Firestore free tier doesn't support full-text search)
   if (options?.search) {
@@ -174,10 +188,10 @@ export async function deleteCardWithWishes(cardId: string): Promise<void> {
 
 export async function getWishesForCard(cardId: string): Promise<AdminWish[]> {
   const db = getAdminDb();
+  // NOTE: Do NOT use orderBy — it excludes old documents missing that field.
   const snap = await db
     .collection("wishes")
     .where("cardId", "==", cardId)
-    .orderBy("createdAt", "desc")
     .get();
 
   return snap.docs.map((doc) => {
